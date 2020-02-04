@@ -17,7 +17,7 @@ Download the binary for your version of PHP.
 - https://github.com/rindow/rindow-openblas-binaries/
 
 
-Wow to setup
+How to setup
 ============
 
 Copy the shared library to the PHP extension directory and set it in php.ini.
