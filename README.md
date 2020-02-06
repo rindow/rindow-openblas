@@ -36,7 +36,7 @@ You need to build OpenBLAS libray for MSVC or download built binaries of libray 
 You can download the binaries from us.
 This binary can be used in pure msvc only environment unlike the binary on openblas site.
 
-- [Rindow OpenBLAS Development Kit for Windows](https://github.com/rindow/rindow-openblas-binaries/devel/windows)
+- [Rindow OpenBLAS Development Kit for Windows](https://github.com/rindow/rindow-openblas-binaries/tree/master/devel/windows)
 
 ### Install VC15
 Developing PHP extensions from php7.2 to php7.4 requires VC15 instead of the latest VC.
