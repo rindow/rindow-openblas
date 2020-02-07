@@ -8,6 +8,13 @@ The Rindow OpenBLAS PHP extension is universal Buffer for N-dimension and OpenBL
 
 You can do very fast N-dimensional array operations in conjunction with the [Rindow Math Matrix](https://github.com/rindow/rindow-math-matrix).
 
+Very useful when you want to do deep learning with PHP!
+
+Requirements
+============
+
+- PHP7.2 or PHP7.3 or PHP7.4
+- Linux or Windows 10
 
 Download binaries
 =================
@@ -16,15 +23,52 @@ Download the binary for your version of PHP.
 
 - https://github.com/rindow/rindow-openblas-binaries/
 
-
 How to setup
 ============
 
 Copy the shared library to the PHP extension directory and set it in php.ini.
 
 
-How to build from source code
-=============================
+How to build from source code on Linux
+======================================
+You can also build and use from source code.
+
+Install build tools and OpenBLAS libray
+---------------------------------------
+Install gcc development environment and openblas library.
+Then install the php development environment according to the target php version.
+
+```shell
+$ sudo apt install build-essential autoconf automake libtool bison re2c
+$ sudo apt install pkg-config
+$ sudo apt install libopenblas-dev
+$ sudo apt install php7.4-dev
+```
+ use the latest version of openblas, download the source code from [the site](https://github.com/xianyi/OpenBLAS/releases), build it, and set the installation location of openblas in PKG_CONFIG_PATH
+
+### Build
+Run the target php version of phpize and build.
+
+```shell
+$ git clone https://github.com/rindow/rindow-openblas
+$ cd rindow_openblas
+$ phpize7.4
+$ ./configure --enable-rindow_openblas --with-php-config=php-config7.4
+$ make
+$ make test
+```
+
+### Install from built directory
+
+```shell
+$ sudo make install
+```
+Add the "extension=rindow_openblas.so" entry to php.ini
+
+
+
+How to build from source code on Windows
+========================================
 You can also build and use from source code.
 
 
@@ -42,13 +86,14 @@ This binary can be used in pure msvc only environment unlike the binary on openb
 Developing PHP extensions from php7.2 to php7.4 requires VC15 instead of the latest VC.
 
 - Install Microsoft Visual Studio 2019 or later installer
-- Run Installer with vs2017 builder option.
+- Run Installer with vs2017 build tools option.
 
 ### Build OpenBLAS for pure MSVC
-Build the OpenBLAS on MSVC with static library.
+If you want to build the OpenBLAS on MSVC with static library instead you use pre-build binary on our site, you can build it yourself.
+
 https://github.com/xianyi/OpenBLAS/wiki/How-to-use-OpenBLAS-in-Microsoft-Visual-Studio
->> 1. Native (MSVC) ABI
->> Install Miniconda3 for 64 bits. And then follow the procedure described on the above page.
+> 1. Native (MSVC) ABI
+> Install Miniconda3 for 64 bits. And then follow the procedure described on the above page.
 
 You want to build a DLL of OpenBLAS, you can run cmake with shared libray option -DBUILD_SHARED_LIBS=ON
 
@@ -87,7 +132,7 @@ The -vcvars_ver=14.16 means vc15.
 C:\visual\studio\path>vcvars64 -vcvars_ver=14.16
 
 C:\tmp>cd c:\php-sdk
-C:\php-sdk>phpsdk-vXXX-xXX.bat
+C:\php-sdk>phpsdk-vc15-x64.bat
 ```
 
 ### Build
@@ -102,5 +147,5 @@ $ nmake test
 
 ### Install from built directory
 
-- Copy the php extension binary(.so or .dll or something) to the php/ext directory from here/arch/Releases_TS/php_rindow_openblas.(.so|.dll)
+- Copy the php extension binary(.dll) to the php/ext directory from here/arch/Releases_TS/php_rindow_openblas.dll
 - Add the "extension=" entry to php.ini

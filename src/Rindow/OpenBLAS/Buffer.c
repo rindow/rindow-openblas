@@ -3,6 +3,7 @@
 #include <Zend/zend_exceptions.h>
 #include <ext/spl/spl_iterators.h>
 #include <ext/spl/spl_exceptions.h>
+#include <stdint.h>
 #include <Rindow/OpenBLAS/Buffer.h>
 
 #ifdef HAVE_CONFIG_H
@@ -49,31 +50,43 @@ static void php_rindow_openblas_buffer_do_set(
         case php_rindow_openblas_dtype_bool:
         case php_rindow_openblas_dtype_int8:
         case php_rindow_openblas_dtype_uint8:
-            uint8_t* bufint8=(uint8_t*)intern->data;
-            bufint8[offset]=(uint8_t)(intvalue & 0xff);
+            {
+                uint8_t* bufint8=(uint8_t*)intern->data;
+                bufint8[offset]=(uint8_t)(intvalue & 0xff);
+            }
             break;
         case php_rindow_openblas_dtype_int16:
         case php_rindow_openblas_dtype_uint16:
-            int16_t* bufint16=(int16_t*)intern->data;
-            bufint16[offset]=(int16_t)(intvalue & 0xffff);
+            {
+                int16_t* bufint16=(int16_t*)intern->data;
+                bufint16[offset]=(int16_t)(intvalue & 0xffff);
+            }
             break;
         case php_rindow_openblas_dtype_int32:
         case php_rindow_openblas_dtype_uint32:
-            int32_t* bufint32=(int32_t*)intern->data;
-            bufint32[offset]=(int32_t)(intvalue);
+            {
+                int32_t* bufint32=(int32_t*)intern->data;
+                bufint32[offset]=(int32_t)(intvalue);
+            }
             break;
         case php_rindow_openblas_dtype_int64:
         case php_rindow_openblas_dtype_uint64:
-            int64_t* bufint64=(int64_t*)intern->data;
-            bufint64[offset]=(int64_t)(intvalue);
+            {
+                int64_t* bufint64=(int64_t*)intern->data;
+                bufint64[offset]=(int64_t)(intvalue);
+            }
             break;
         case php_rindow_openblas_dtype_float32:
-            float* buffloat32=(float*)intern->data;
-            buffloat32[offset]=(float)floatvalue;
+            {
+                float* buffloat32=(float*)intern->data;
+                buffloat32[offset]=(float)floatvalue;
+            }
             break;
         case php_rindow_openblas_dtype_float64:
-            double* buffloat64=(double*)intern->data;
-            buffloat64[offset]=(double)floatvalue;
+            {
+                double* buffloat64=(double*)intern->data;
+                buffloat64[offset]=(double)floatvalue;
+            }
             break;
         default:
             zend_throw_exception(spl_ce_DomainException, "invalid dtype", 0);
@@ -190,48 +203,70 @@ static PHP_METHOD(Buffer, offsetGet)
     }
     switch(intern->dtype) {
         case php_rindow_openblas_dtype_bool:
-            uint8_t* bufbool=(uint8_t*)intern->data;
-            boolvalue =(zend_bool)bufbool[offset];
+            {
+                uint8_t* bufbool=(uint8_t*)intern->data;
+                boolvalue =(zend_bool)bufbool[offset];
+            }
             RETURN_BOOL(boolvalue);
         case php_rindow_openblas_dtype_int8:
-            int8_t* bufint8=(int8_t*)intern->data;
-            intvalue =(zend_long)bufint8[offset];
+            {
+                int8_t* bufint8=(int8_t*)intern->data;
+                intvalue =(zend_long)bufint8[offset];
+            }
             RETURN_LONG(intvalue);
         case php_rindow_openblas_dtype_uint8:
-            uint8_t* bufuint8=(uint8_t*)intern->data;
-            intvalue =(zend_long)bufuint8[offset];
+            {
+                uint8_t* bufuint8=(uint8_t*)intern->data;
+                intvalue =(zend_long)bufuint8[offset];
+            }
             RETURN_LONG(intvalue);
         case php_rindow_openblas_dtype_int16:
-            int16_t* bufint16=(int16_t*)intern->data;
-            intvalue = (zend_long)bufint16[offset];
+            {
+                int16_t* bufint16=(int16_t*)intern->data;
+                intvalue = (zend_long)bufint16[offset];
+            }
             RETURN_LONG(intvalue);
         case php_rindow_openblas_dtype_uint16:
-            uint16_t* bufuint16=(uint16_t*)intern->data;
-            intvalue = (zend_long)bufuint16[offset];
+            {
+                uint16_t* bufuint16=(uint16_t*)intern->data;
+                intvalue = (zend_long)bufuint16[offset];
+            }
             RETURN_LONG(intvalue);
         case php_rindow_openblas_dtype_int32:
-            int32_t* bufint32=(int32_t*)intern->data;
-            intvalue = (zend_long)bufint32[offset];
+            {
+                int32_t* bufint32=(int32_t*)intern->data;
+                intvalue = (zend_long)bufint32[offset];
+            }
             RETURN_LONG(intvalue);
         case php_rindow_openblas_dtype_uint32:
-            uint32_t* bufuint32=(uint32_t*)intern->data;
-            intvalue = (zend_long)bufuint32[offset];
+            {
+                uint32_t* bufuint32=(uint32_t*)intern->data;
+                intvalue = (zend_long)bufuint32[offset];
+            }
             RETURN_LONG(intvalue);
         case php_rindow_openblas_dtype_int64:
-            int64_t* bufint64=(int64_t*)intern->data;
-            intvalue = (zend_long)bufint64[offset];
+            {
+                int64_t* bufint64=(int64_t*)intern->data;
+                intvalue = (zend_long)bufint64[offset];
+            }
             RETURN_LONG(intvalue);
         case php_rindow_openblas_dtype_uint64:
-            uint64_t* bufuint64=(uint64_t*)intern->data;
-            intvalue = (zend_long)bufuint64[offset];
+            {
+                uint64_t* bufuint64=(uint64_t*)intern->data;
+                intvalue = (zend_long)bufuint64[offset];
+            }
             RETURN_LONG(intvalue);
         case php_rindow_openblas_dtype_float32:
-            float* buffloat32=(float*)intern->data;
-            floatvalue = (double)buffloat32[offset];
+            {
+                float* buffloat32=(float*)intern->data;
+                floatvalue = (double)buffloat32[offset];
+            }
             RETURN_DOUBLE(floatvalue);
         case php_rindow_openblas_dtype_float64:
-            double* buffloat64=(double*)intern->data;
-            floatvalue = (double)buffloat64[offset];
+            {
+                double* buffloat64=(double*)intern->data;
+                floatvalue = (double)buffloat64[offset];
+            }
             RETURN_DOUBLE(floatvalue);
         default:
             zend_throw_exception(spl_ce_DomainException, "invalid dtype", 0);

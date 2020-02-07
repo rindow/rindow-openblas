@@ -4,6 +4,7 @@
 #include <ext/spl/spl_iterators.h>
 #include <ext/spl/spl_exceptions.h>
 #include <cblas.h>
+#include <stdint.h>
 #include <Rindow/OpenBLAS/Buffer.h>
 
 

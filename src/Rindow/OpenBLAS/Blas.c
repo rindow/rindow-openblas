@@ -391,6 +391,7 @@ static PHP_METHOD(Blas, iamax)
 }
 /* }}} */
 
+#ifdef OPENBLAS_HAVE_IAMIN
 /* Method Rindow\OpenBLAS\Blas::
     public function iamin(
         int $n,
@@ -440,6 +441,7 @@ static PHP_METHOD(Blas, iamin)
     RETURN_LONG(resultIdx);
 }
 /* }}} */
+#endif
 
 /* Method Rindow\OpenBLAS\Blas::
     public function copy(
@@ -874,12 +876,14 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Blas_iamax, 0, 0, 4)
     ZEND_ARG_INFO(0, incX)
 ZEND_END_ARG_INFO()
 
+#ifdef OPENBLAS_HAVE_IAMIN
 ZEND_BEGIN_ARG_INFO_EX(ai_Blas_iamin, 0, 0, 4)
     ZEND_ARG_INFO(0, n)
     ZEND_ARG_OBJ_INFO(0, x, Rindow\\OpenBLAS\\Buffer, 0)
     ZEND_ARG_INFO(0, offsetX)
     ZEND_ARG_INFO(0, incX)
 ZEND_END_ARG_INFO()
+#endif
 
 ZEND_BEGIN_ARG_INFO_EX(ai_Blas_copy, 0, 0, 8)
     ZEND_ARG_INFO(0, n)
@@ -944,7 +948,9 @@ static zend_function_entry php_rindow_openblas_blas_me[] = {
     PHP_ME(Blas, dot,   ai_Blas_dot,   ZEND_ACC_PUBLIC)
     PHP_ME(Blas, asum,  ai_Blas_asum,  ZEND_ACC_PUBLIC)
     PHP_ME(Blas, iamax, ai_Blas_iamax, ZEND_ACC_PUBLIC)
+#ifdef OPENBLAS_HAVE_IAMIN
     PHP_ME(Blas, iamin, ai_Blas_iamin, ZEND_ACC_PUBLIC)
+#endif
     PHP_ME(Blas, copy,  ai_Blas_copy,  ZEND_ACC_PUBLIC)
     PHP_ME(Blas, gemv,  ai_Blas_gemv,  ZEND_ACC_PUBLIC)
     PHP_ME(Blas, gemm,  ai_Blas_gemm,  ZEND_ACC_PUBLIC)

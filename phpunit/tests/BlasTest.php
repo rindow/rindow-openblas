@@ -21,6 +21,27 @@ class Test extends TestCase
         return $blas;
     }
 
+    public function getOpenBLASVersion($blas)
+    {
+        $config = $blas->getConfig();
+        if(strpos($config,'OpenBLAS')===0) {
+            $config = explode(' ',$config);
+            return $config[1];
+        } else {
+            return '0.0.0';
+        }
+    }
+
+    public function skipiamin()
+    {
+        $blas = $this->getBlas(null);
+        if(version_compare($this->getOpenBLASVersion($blas),'0.3.6','>=')) {
+            return false;
+        }
+        $this->markTestSkipped("openblas has no iamin");
+        return true;
+    }
+
     public function translate_scal(
         float $a,NDArray $X) : array
     {
@@ -226,7 +247,10 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $blas = $this->getBlas($mo);
         $s = $blas->getConfig();
-        $this->assertStringStartsWith('OpenBLAS',$s);
+
+        $this->assertTrue(
+            strpos($s,'OpenBLAS')===0 ||
+            strpos($s,'NO_LAPACKE')===0);
     }
 
     public function testGetCorename()
@@ -1041,6 +1065,7 @@ class Test extends TestCase
 
     public function testAminNormal()
     {
+        if($this->skipiamin()) return;
         $mo = new MatrixOperator();
         $blas = $this->getBlas($mo);
 
@@ -1054,6 +1079,7 @@ class Test extends TestCase
 
     public function testAminMinusN()
     {
+        if($this->skipiamin()) return;
         $mo = new MatrixOperator();
         $blas = $this->getBlas($mo);
 
@@ -1069,6 +1095,7 @@ class Test extends TestCase
 
     public function testAminMinusOffsetX()
     {
+        if($this->skipiamin()) return;
         $mo = new MatrixOperator();
         $blas = $this->getBlas($mo);
 
@@ -1084,6 +1111,7 @@ class Test extends TestCase
 
     public function testAminMinusIncX()
     {
+        if($this->skipiamin()) return;
         $mo = new MatrixOperator();
         $blas = $this->getBlas($mo);
 
@@ -1099,6 +1127,7 @@ class Test extends TestCase
 
     public function testAminIllegalBufferX()
     {
+        if($this->skipiamin()) return;
         $mo = new MatrixOperator();
         $blas = $this->getBlas($mo);
 
@@ -1114,6 +1143,7 @@ class Test extends TestCase
 
     public function testAminOverflowBufferXwithSize()
     {
+        if($this->skipiamin()) return;
         $mo = new MatrixOperator();
         $blas = $this->getBlas($mo);
 
@@ -1129,6 +1159,7 @@ class Test extends TestCase
 
     public function testAminOverflowBufferXwithOffsetX()
     {
+        if($this->skipiamin()) return;
         $mo = new MatrixOperator();
         $blas = $this->getBlas($mo);
 
@@ -1144,6 +1175,7 @@ class Test extends TestCase
 
     public function testAminOverflowBufferXwithIncX()
     {
+        if($this->skipiamin()) return;
         $mo = new MatrixOperator();
         $blas = $this->getBlas($mo);
 

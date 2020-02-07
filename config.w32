@@ -26,6 +26,7 @@ if (PHP_RINDOW_OPENBLAS != 'no') {
   PHP_RINDOW_OPENBLAS_CFLAGS = PHP_RINDOW_OPENBLAS_CFLAGS.replace(/\s+/g, ' ');
 
   AC_DEFINE('HAVE_RINDOW_OPENBLAS', 1, 'rindow_openblas support enabled');
+  AC_DEFINE('OPENBLAS_HAVE_IAMIN', 1, 'openblas have iamin');
 
   EXTENSION('rindow_openblas', 'rindow_openblas.c', null, PHP_RINDOW_OPENBLAS_CFLAGS);
   ADD_SOURCES(configure_module_dirname + "/src/Rindow/OpenBLAS", "Buffer.c Blas.c Math.c", "rindow_openblas");
