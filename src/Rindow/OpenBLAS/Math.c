@@ -619,12 +619,12 @@ static PHP_METHOD(Math, minimum)
       X := 0  (X <= a)
 
    Method Rindow\OpenBLAS\Math::
-    public function dmaximum(
+    public function greater(
         int $n,
         float $alpha,
         Buffer $X, int $offsetX, int $incX) : void
  {{{ */
-static PHP_METHOD(Math, dmaximum)
+static PHP_METHOD(Math, greater)
 {
     php_rindow_openblas_buffer_t* buffer;
     zend_long n;
@@ -693,12 +693,12 @@ static PHP_METHOD(Math, dmaximum)
         X := 0  (X >= a)
 
    Method Rindow\OpenBLAS\Math::
-    public function dminimum(
+    public function less(
         int $n,
         float $alpha,
         Buffer $X, int $offsetX, int $incX) : void
  {{{ */
-static PHP_METHOD(Math, dminimum)
+static PHP_METHOD(Math, less)
 {
     php_rindow_openblas_buffer_t* buffer;
     zend_long n;
@@ -2277,7 +2277,7 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Math_minimum, 0, 0, 5)
     ZEND_ARG_INFO(0, incX)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(ai_Math_dmaximum, 0, 0, 5)
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_greater, 0, 0, 5)
     ZEND_ARG_INFO(0, n)
     ZEND_ARG_INFO(0, alpha)
     ZEND_ARG_OBJ_INFO(0, x, Rindow\\OpenBLAS\\Buffer, 0)
@@ -2285,7 +2285,7 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Math_dmaximum, 0, 0, 5)
     ZEND_ARG_INFO(0, incX)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(ai_Math_dminimum, 0, 0, 5)
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_less, 0, 0, 5)
     ZEND_ARG_INFO(0, n)
     ZEND_ARG_INFO(0, alpha)
     ZEND_ARG_OBJ_INFO(0, x, Rindow\\OpenBLAS\\Buffer, 0)
@@ -2448,8 +2448,8 @@ static zend_function_entry php_rindow_openblas_math_me[] = {
     PHP_ME(Math, reciprocal,     ai_Math_reciprocal,     ZEND_ACC_PUBLIC)
     PHP_ME(Math, maximum,        ai_Math_maximum,        ZEND_ACC_PUBLIC)
     PHP_ME(Math, minimum,        ai_Math_minimum,        ZEND_ACC_PUBLIC)
-    PHP_ME(Math, dmaximum,       ai_Math_dmaximum,       ZEND_ACC_PUBLIC)
-    PHP_ME(Math, dminimum,       ai_Math_dminimum,       ZEND_ACC_PUBLIC)
+    PHP_ME(Math, greater,        ai_Math_greater,        ZEND_ACC_PUBLIC)
+    PHP_ME(Math, less,           ai_Math_less,           ZEND_ACC_PUBLIC)
     PHP_ME(Math, multiply,       ai_Math_multiply,       ZEND_ACC_PUBLIC)
     PHP_ME(Math, add,            ai_Math_add,            ZEND_ACC_PUBLIC)
     PHP_ME(Math, duplicate,      ai_Math_duplicate,      ZEND_ACC_PUBLIC)

@@ -1269,7 +1269,7 @@ class Test extends TestCase
         $math->minimum($N,$alpha,$XX,$offX,$incX);
     }
 
-    public function testDMaximumNormal()
+    public function testGreaterNormal()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
@@ -1278,11 +1278,11 @@ class Test extends TestCase
         [$N,$alpha,$XX,$offX,$incX] =
             $this->translate_maximum(2,$X);
 
-        $math->dmaximum($N,$alpha,$XX,$offX,$incX);
+        $math->greater($N,$alpha,$XX,$offX,$incX);
         $this->assertEquals([0,0,1],$X->toArray());
     }
 
-    public function testDMaximumMinusN()
+    public function testGreaterMinusN()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
@@ -1294,10 +1294,10 @@ class Test extends TestCase
         $N = 0;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument n must be greater than 0.');
-        $math->dmaximum($N,$alpha,$XX,$offX,$incX);
+        $math->greater($N,$alpha,$XX,$offX,$incX);
     }
 
-    public function testDMaximumMinusOffsetX()
+    public function testGreaterMinusOffsetX()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
@@ -1309,10 +1309,10 @@ class Test extends TestCase
         $offX = -1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument offsetX must be greater than equals 0.');
-        $math->dmaximum($N,$alpha,$XX,$offX,$incX);
+        $math->greater($N,$alpha,$XX,$offX,$incX);
     }
 
-    public function testDMaximumMinusIncX()
+    public function testGreaterMinusIncX()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
@@ -1324,10 +1324,10 @@ class Test extends TestCase
         $incX = -1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument incX must be greater than 0.');
-        $math->dmaximum($N,$alpha,$XX,$offX,$incX);
+        $math->greater($N,$alpha,$XX,$offX,$incX);
     }
 
-    public function testDMaximumIllegalBufferX()
+    public function testGreaterIllegalBufferX()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
@@ -1339,10 +1339,10 @@ class Test extends TestCase
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
         $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
-        $math->dmaximum($N,$alpha,$XX,$offX,$incX);
+        $math->greater($N,$alpha,$XX,$offX,$incX);
     }
 
-    public function testDMaximumOverflowBufferXwithSize()
+    public function testGreaterOverflowBufferXwithSize()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
@@ -1354,10 +1354,10 @@ class Test extends TestCase
         $XX = $mo->array([1,2])->buffer();
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->dmaximum($N,$alpha,$XX,$offX,$incX);
+        $math->greater($N,$alpha,$XX,$offX,$incX);
     }
 
-    public function testDMaximumOverflowBufferXwithOffsetX()
+    public function testGreaterOverflowBufferXwithOffsetX()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
@@ -1369,10 +1369,10 @@ class Test extends TestCase
         $offX = 1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->dmaximum($N,$alpha,$XX,$offX,$incX);
+        $math->greater($N,$alpha,$XX,$offX,$incX);
     }
 
-    public function testDMaximumOverflowBufferXwithIncX()
+    public function testGreaterOverflowBufferXwithIncX()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
@@ -1384,10 +1384,10 @@ class Test extends TestCase
         $incX = 2;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->dmaximum($N,$alpha,$XX,$offX,$incX);
+        $math->greater($N,$alpha,$XX,$offX,$incX);
     }
 
-    public function testDMinimumNormal()
+    public function testLessNormal()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
@@ -1396,11 +1396,11 @@ class Test extends TestCase
         [$N,$alpha,$XX,$offX,$incX] =
             $this->translate_maximum(2,$X);
 
-        $math->dminimum($N,$alpha,$XX,$offX,$incX);
+        $math->less($N,$alpha,$XX,$offX,$incX);
         $this->assertEquals([1,0,0],$X->toArray());
     }
 
-    public function testDMinimumMinusN()
+    public function testLessMinusN()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
@@ -1412,10 +1412,10 @@ class Test extends TestCase
         $N = 0;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument n must be greater than 0.');
-        $math->dminimum($N,$alpha,$XX,$offX,$incX);
+        $math->less($N,$alpha,$XX,$offX,$incX);
     }
 
-    public function testDMinimumMinusOffsetX()
+    public function testLessMinusOffsetX()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
@@ -1427,10 +1427,10 @@ class Test extends TestCase
         $offX = -1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument offsetX must be greater than equals 0.');
-        $math->dminimum($N,$alpha,$XX,$offX,$incX);
+        $math->less($N,$alpha,$XX,$offX,$incX);
     }
 
-    public function testDMinimumMinusIncX()
+    public function testLessMinusIncX()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
@@ -1442,10 +1442,10 @@ class Test extends TestCase
         $incX = -1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument incX must be greater than 0.');
-        $math->dminimum($N,$alpha,$XX,$offX,$incX);
+        $math->less($N,$alpha,$XX,$offX,$incX);
     }
 
-    public function testDMinimumIllegalBufferX()
+    public function testLessIllegalBufferX()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
@@ -1457,10 +1457,10 @@ class Test extends TestCase
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
         $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
-        $math->dminimum($N,$alpha,$XX,$offX,$incX);
+        $math->less($N,$alpha,$XX,$offX,$incX);
     }
 
-    public function testDMinimumOverflowBufferXwithSize()
+    public function testLessOverflowBufferXwithSize()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
@@ -1472,10 +1472,10 @@ class Test extends TestCase
         $XX = $mo->array([1,2])->buffer();
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->dminimum($N,$alpha,$XX,$offX,$incX);
+        $math->less($N,$alpha,$XX,$offX,$incX);
     }
 
-    public function testDMinimumOverflowBufferXwithOffsetX()
+    public function testLessOverflowBufferXwithOffsetX()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
@@ -1487,10 +1487,10 @@ class Test extends TestCase
         $offX = 1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->dminimum($N,$alpha,$XX,$offX,$incX);
+        $math->less($N,$alpha,$XX,$offX,$incX);
     }
 
-    public function testDMinimumOverflowBufferXwithIncX()
+    public function testLessOverflowBufferXwithIncX()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
@@ -1502,7 +1502,7 @@ class Test extends TestCase
         $incX = 2;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->dminimum($N,$alpha,$XX,$offX,$incX);
+        $math->less($N,$alpha,$XX,$offX,$incX);
     }
 
     public function testMultiplySameSizeNormal()
