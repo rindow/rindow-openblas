@@ -224,6 +224,65 @@ class Test extends TestCase
         ];
     }
 
+    public function translate_selectAxis0(
+        NDArray $A,
+        NDArray $X,
+        NDArray $Y=null) : array
+    {
+        if($X->ndim()!=1) {
+            throw new InvalidArgumentException('"X" must be 1D-NDArray.');
+        }
+        $countX = $X->shape()[0];
+        if($A->ndim()==1) {
+            $shape = $X->shape();
+            $m = $A->shape()[0];
+            $n = 1;
+        } else {
+            $shape = $A->shape();
+            $m = $shape[0];
+            $n = (int)($A->size()/$m);
+            array_shift($shape);
+            array_unshift($shape,$countX);
+        }
+        if($Y===null) {
+            $Y = $this->alloc($shape,$A->dtype());
+        } else {
+            if($Y->shape()!=$shape) {
+                throw new InvalidArgumentException('Unmatch size "Y" with "X" and "A" .');
+            }
+        }
+
+        //if($A->ndim()==1) {
+        //    $A = $A->reshape([$n,1]);
+        //}
+        //if($Y->ndim()==1) {
+        //    $newY = $Y->reshape([$n,1]);
+        //} else {
+        //    $newY = $Y;
+        //}
+        //for($i=0;$i<$n;$i++) {
+        //    $this->copy($A[$X[$i]],$newY[$i]);
+        //}
+        //return $Y;
+
+        $AA = $A->buffer();
+        $offA = $A->offset();
+        $ldA = $n;
+        $XX = $X->buffer();
+        $offX = $X->offset();
+        $YY = $Y->buffer();
+        $offY = $Y->offset();
+        $ldY = $n;
+
+        return [
+            $m,
+            $n,
+            $countX,
+            $AA,$offA,$ldA,
+            $XX,$offX,1,
+            $YY,$offY,$ldY];
+    }
+
     public function translate_selectAxis1(
         NDArray $A,
         NDArray $X,
@@ -349,6 +408,22 @@ class Test extends TestCase
            $n,
            $AA,$offA,$n,
            $XX,$offX,1
+       ];
+   }
+
+   public function translate_astype(NDArray $X, $dtype, NDArray $Y) : array
+   {
+       $n = $X->size();
+       $XX = $X->buffer();
+       $offX = $X->offset();
+       $YY = $Y->buffer();
+       $offY = $Y->offset();
+
+       return [
+           $n,
+           $dtype,
+           $XX,$offX,1,
+           $YY,$offY,1
        ];
    }
 
@@ -3301,6 +3376,459 @@ class Test extends TestCase
         $math->zeros($N,$XX,$offX,$incX);
     }
 
+######################################################################
+
+    ##
+    public function testSelectAxis0Normal()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,2],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $this->assertEquals([[1,2,3],[7,8,9]],$Y->toArray());
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float64);
+        $X = $mo->array([0,2],NDArray::int64);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float64);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $this->assertEquals([[1,2,3],[7,8,9]],$Y->toArray());
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::int64);
+        $X = $mo->array([0,2],NDArray::int64);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::int64);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $this->assertEquals([[1,2,3],[7,8,9]],$Y->toArray());
+
+        $A = $mo->array([1,2,3,4],NDArray::float32);
+        $X = $mo->array([0,2],NDArray::int32);
+        $Y = $mo->array([0,0],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $this->assertEquals([1,3],$Y->toArray());
+
+        $A = $mo->array([1,2,3,4],NDArray::float64);
+        $X = $mo->array([0,2],NDArray::int64);
+        $Y = $mo->array([0,0],NDArray::float64);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $this->assertEquals([1,3],$Y->toArray());
+
+        $A = $mo->array([1,2,3,4],NDArray::int64);
+        $X = $mo->array([0,2],NDArray::int64);
+        $Y = $mo->array([0,0],NDArray::int64);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $this->assertEquals([1,3],$Y->toArray());
+    }
+
+    public function testSelectAxis0LabelNumberOutOfBounds1()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,4],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Label number is out of bounds.');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testSelectAxis0LabelNumberOutOfBounds2()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,-1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Label number is out of bounds.');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0MinusM()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $M = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument m must be greater than 0.');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0MinusN()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $N = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument n must be greater than 0.');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0MinusK()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $K = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument k must be greater than 0.');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0MinusOffsetA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $offA = -1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument offsetA must be greater than equals 0.');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0MinusLdA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $ldA = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument ldA must be greater than 0.');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0IllegalBufferA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $AA = new \stdClass();
+        $this->expectException(TypeError::class);
+        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0OverflowBufferAwithSize()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $AA = $mo->array([1,2,3,4,5,6,7,8,9,10,11])->buffer();
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferA');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0OverflowBufferAwithOffset()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $offA = 1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferA');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0OverflowBufferAwithLdA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $ldA = 4;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferA');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0MinusOffsetX()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $offX = -1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument offsetX must be greater than equals 0.');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0MinusIncX()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $incX = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument incX must be greater than 0.');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0IllegalBufferX()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $XX = new \stdClass();
+        $this->expectException(TypeError::class);
+        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0OverflowBufferXwithSize()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $XX = $mo->array([1])->buffer();
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferX');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0OverflowBufferXwithOffsetX()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $offX = 1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferX');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0OverflowBufferXwithIncX()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $incX = 2;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferX');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0MinusOffsetY()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $offY = -1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument offsetY must be greater than equals 0.');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0MinusLdY()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $ldY = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument ldY must be greater than 0.');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0IllegalBufferY()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $YY = new \stdClass();
+        $this->expectException(TypeError::class);
+        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0OverflowBufferYwithSize()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $YY = $mo->array([0])->buffer();
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferY');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0OverflowBufferXwithOffsetY()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $offY = 1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferY');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+    public function testselectAxis0OverflowBufferXwithLdY()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
+            $this->translate_selectAxis0($A,$X,$Y);
+
+        $ldY = 4;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferY');
+        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+    }
+
+######################################################################
     public function testSelectAxis1Normal()
     {
         $mo = new MatrixOperator();
@@ -4342,5 +4870,170 @@ class Test extends TestCase
         $YY = $Y->buffer();
         $math->equal($n,$XX,$offX,$incX,$YY,$offY,$incY);
         $this->assertEquals([false,true,true,true,false],$Y->toArray());
+    }
+
+
+    public function testastype()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        #### int to any
+        $X = $mo->array([-1,0,1,2,3],NDArray::int32);
+        $dtype = NDArray::float32;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([-1,0,1,2,3],$Y->toArray());
+
+        $dtype = NDArray::float64;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([-1,0,1,2,3],$Y->toArray());
+
+        $dtype = NDArray::int8;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([-1,0,1,2,3],$Y->toArray());
+
+        $dtype = NDArray::int16;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([-1,0,1,2,3],$Y->toArray());
+
+        $dtype = NDArray::int32;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([-1,0,1,2,3],$Y->toArray());
+
+        $dtype = NDArray::int64;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([-1,0,1,2,3],$Y->toArray());
+
+        $dtype = NDArray::bool;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([true,false,true,true,true],$Y->toArray());
+
+        #### float to any ######
+        $X = $mo->array([-1,0,1,2,3],NDArray::float32);
+        $dtype = NDArray::float32;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([-1,0,1,2,3],$Y->toArray());
+
+        $dtype = NDArray::float64;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([-1,0,1,2,3],$Y->toArray());
+
+        $dtype = NDArray::int8;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([-1,0,1,2,3],$Y->toArray());
+
+        $dtype = NDArray::int16;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([-1,0,1,2,3],$Y->toArray());
+
+        $dtype = NDArray::int32;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([-1,0,1,2,3],$Y->toArray());
+
+        $dtype = NDArray::int64;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([-1,0,1,2,3],$Y->toArray());
+
+        $dtype = NDArray::bool;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([true,false,true,true,true],$Y->toArray());
+
+        #### bool to any ######
+        $X = $mo->array([true,false,true,true,true],NDArray::bool);
+        $dtype = NDArray::float32;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([1,0,1,1,1],$Y->toArray());
+
+        $dtype = NDArray::float64;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([1,0,1,1,1],$Y->toArray());
+
+        $dtype = NDArray::int8;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([1,0,1,1,1],$Y->toArray());
+
+        $dtype = NDArray::int16;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([1,0,1,1,1],$Y->toArray());
+
+        $dtype = NDArray::int32;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([1,0,1,1,1],$Y->toArray());
+
+        $dtype = NDArray::int64;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([1,0,1,1,1],$Y->toArray());
+
+        $dtype = NDArray::bool;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([true,false,true,true,true],$Y->toArray());
+
+        #### float to unsigned ######
+        $X = $mo->array([-1,0,1,2,3],NDArray::float32);
+        $dtype = NDArray::uint8;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([255,0,1,2,3],$Y->toArray());
+
+        $dtype = NDArray::uint16;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([65535,0,1,2,3],$Y->toArray());
+
+        $dtype = NDArray::uint32;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([4294967295,0,1,2,3],$Y->toArray());
+
+        $dtype = NDArray::uint64;
+        $Y = $mo->zeros($X->shape(),$dtype);
+        [$n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY] = $this->translate_astype($X, $dtype, $Y);
+        $math->astype($n,$dtype,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->assertEquals([-1,0,1,2,3],$Y->toArray());
     }
 }

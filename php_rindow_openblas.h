@@ -5,7 +5,7 @@
 
 # define phpext_rindow_openblas_ptr &rindow_openblas_module_entry
 
-# define PHP_RINDOW_OPENBLAS_VERSION "0.1.0"
+# define PHP_RINDOW_OPENBLAS_VERSION "0.1.1"
 
 # if defined(ZTS) && defined(COMPILE_DL_RINDOW_OPENBLAS)
 ZEND_TSRMLS_CACHE_EXTERN()

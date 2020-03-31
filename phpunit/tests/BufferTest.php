@@ -15,7 +15,7 @@ class Test extends TestCase
 {
     public function testExtensionVersion()
     {
-        $this->assertEquals('0.1.0',phpversion('rindow_openblas'));
+        $this->assertEquals('0.1.1',phpversion('rindow_openblas'));
     }
 
     public function testNormal()
