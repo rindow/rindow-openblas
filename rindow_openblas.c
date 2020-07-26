@@ -185,6 +185,19 @@ int php_rindow_openblas_assert_matrix_buffer_spec(
     return 0;
 }
 
+int php_rindow_openblas_assert_buffer_size(
+    php_rindow_openblas_buffer_t *buffer,
+    zend_long offset,zend_long size,
+    char* message)
+{
+    if(size<1 || offset<0 ||
+        buffer->size < offset+size) {
+        zend_throw_exception(spl_ce_RuntimeException, message, 0);
+        return -1;
+    }
+    return 0;
+}
+
 /* {{{ PHP_RINIT_FUNCTION
  */
 PHP_RINIT_FUNCTION(rindow_openblas)

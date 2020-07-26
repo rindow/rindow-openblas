@@ -67,4 +67,9 @@ extern int php_rindow_openblas_assert_matrix_buffer_spec(
     int name,php_rindow_openblas_buffer_t *buffer,
     zend_long m, zend_long n, zend_long offset, zend_long ld);
 
+extern int php_rindow_openblas_assert_buffer_size(
+    php_rindow_openblas_buffer_t *buffer,
+    zend_long offset,zend_long size,
+    char* message);
+
 #endif	/* PHP_RINDOW_OPENBLAS_H */

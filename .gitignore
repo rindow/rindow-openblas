@@ -27,6 +27,8 @@ Makefile.objects
 missing
 mkinstalldirs
 modules
+run-test.php
+phpunit/composer.lock
 phpunit/vendor/
 phpunit/tests/.phpunit.*
 tests/*/*.diff
