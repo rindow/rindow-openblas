@@ -3,6 +3,7 @@
 #include <Zend/zend_exceptions.h>
 #include <ext/spl/spl_iterators.h>
 #include <ext/spl/spl_exceptions.h>
+#include <ext/standard/php_rand.h>
 #include <cblas.h>
 #include <stdint.h>
 #include <Rindow/OpenBLAS/Buffer.h>
@@ -125,6 +126,44 @@ static zend_object* php_rindow_openblas_math_create_object(zend_class_entry* cla
     } \
 }
 
+int php_rindow_openblas_val2int(
+    zval* val_value,
+    zend_long* integer_value,
+    char* message)
+{
+	switch(Z_TYPE_P(val_value)) {
+	    case IS_LONG:
+	        *integer_value = Z_LVAL_P(val_value);
+	        break;
+	    case IS_DOUBLE:
+	        *integer_value = (zend_long)Z_DVAL_P(val_value);
+	        break;
+		default:
+            zend_throw_exception(spl_ce_InvalidArgumentException, message, 0);
+			return -1;
+	}
+	return 0;
+}
+
+int php_rindow_openblas_val2float(
+    zval* val_value,
+    double* float_value,
+    char* message)
+{
+	switch(Z_TYPE_P(val_value)) {
+	    case IS_LONG:
+	        *float_value = (double)Z_LVAL_P(val_value);
+	        break;
+	    case IS_DOUBLE:
+	        *float_value = Z_DVAL_P(val_value);
+	        break;
+		default:
+            zend_throw_exception(spl_ce_InvalidArgumentException, message, 0);
+			return -1;
+	}
+	return 0;
+}
+
 /* Method Rindow\OpenBLAS\Math::
     public function sum(
         int $n,
@@ -205,7 +244,7 @@ static PHP_METHOD(Math, sum)
             }
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
     RETURN_DOUBLE(result);
@@ -2565,6 +2604,7 @@ static PHP_METHOD(Math, astype)
 #include "Math_im2col1d.c"
 #include "Math_im2col2d.c"
 #include "Math_im2col3d.c"
+#include "Math_random.c"
 
 ZEND_BEGIN_ARG_INFO_EX(ai_Math_sum, 0, 0, 4)
     ZEND_ARG_INFO(0, n)
@@ -2933,6 +2973,35 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Math_im2col3d, 0, 0, 21)
     ZEND_ARG_INFO(0, cols_size)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_randomUniform, 0, 0, 7)
+    ZEND_ARG_INFO(0, n)
+    ZEND_ARG_OBJ_INFO(0, x, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetX)
+    ZEND_ARG_INFO(0, incX)
+    ZEND_ARG_INFO(0, low)
+    ZEND_ARG_INFO(0, high)
+    ZEND_ARG_INFO(0, seed)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_randomNormal, 0, 0, 7)
+    ZEND_ARG_INFO(0, n)
+    ZEND_ARG_OBJ_INFO(0, x, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetX)
+    ZEND_ARG_INFO(0, incX)
+    ZEND_ARG_INFO(0, mean)
+    ZEND_ARG_INFO(0, scale)
+    ZEND_ARG_INFO(0, seed)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_randomSequence, 0, 0, 6)
+    ZEND_ARG_INFO(0, n)
+    ZEND_ARG_INFO(0, size)
+    ZEND_ARG_OBJ_INFO(0, x, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetX)
+    ZEND_ARG_INFO(0, incX)
+    ZEND_ARG_INFO(0, seed)
+ZEND_END_ARG_INFO()
+
 /* {{{ Rindow\OpenBLAS\Blas function entries */
 static zend_function_entry php_rindow_openblas_math_me[] = {
     /* clang-format off */
@@ -2969,6 +3038,9 @@ static zend_function_entry php_rindow_openblas_math_me[] = {
     PHP_ME(Math, im2col1d,         ai_Math_im2col1d,         ZEND_ACC_PUBLIC)
     PHP_ME(Math, im2col2d,         ai_Math_im2col2d,         ZEND_ACC_PUBLIC)
     PHP_ME(Math, im2col3d,         ai_Math_im2col3d,         ZEND_ACC_PUBLIC)
+    PHP_ME(Math, randomUniform,         ai_Math_randomUniform,         ZEND_ACC_PUBLIC)
+    PHP_ME(Math, randomNormal,         ai_Math_randomNormal,         ZEND_ACC_PUBLIC)
+    PHP_ME(Math, randomSequence,         ai_Math_randomSequence,         ZEND_ACC_PUBLIC)
     PHP_FE_END
     /* clang-format on */
 };
