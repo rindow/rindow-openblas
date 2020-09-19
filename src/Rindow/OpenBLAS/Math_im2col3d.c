@@ -126,7 +126,7 @@ static inline int im3d_stride(
     zend_long stride_d,
     zend_long stride_h,
     zend_long stride_w,
-    zend_long reverse,
+    zend_bool reverse,
     php_rindow_openblas_buffer_t* images,
     zend_long filter_d,
     zend_long filter_h,
@@ -190,7 +190,7 @@ static inline int im3d_stride(
                         out_pos,
                         out_filter_step,
                         out_channel_step
-                    ); 
+                    );
                     if(rc) {
                         return rc;
                     }
@@ -206,6 +206,7 @@ static inline int im3d_stride(
         }
         batch_pos += batch_step;
     }
+    return 0;
 }
 
 /*
@@ -302,19 +303,19 @@ static PHP_METHOD(Math, im2col3d)
         Z_PARAM_LONG(im_w)
         Z_PARAM_LONG(channels)
         Z_PARAM_LONG(filter_d)
-        
+
         Z_PARAM_LONG(filter_h)
         Z_PARAM_LONG(filter_w)
         Z_PARAM_LONG(stride_d)
         Z_PARAM_LONG(stride_h)
         Z_PARAM_LONG(stride_w)
-        
+
         Z_PARAM_BOOL(padding)
         Z_PARAM_BOOL(channels_first)
         Z_PARAM_BOOL(cols_channels_first)
         Z_PARAM_OBJECT_OF_CLASS(cols_obj,php_rindow_openblas_buffer_ce)
         Z_PARAM_LONG(cols_offset)
-        
+
         Z_PARAM_LONG(cols_size)
     ZEND_PARSE_PARAMETERS_END();
 
@@ -332,7 +333,7 @@ static PHP_METHOD(Math, im2col3d)
     }
     if(images->dtype!=php_rindow_openblas_dtype_float32 &&
         images->dtype!=php_rindow_openblas_dtype_float64) {
-        zend_throw_exception(spl_ce_InvalidArgumentException, 
+        zend_throw_exception(spl_ce_InvalidArgumentException,
             "Unsupported data type", 0);
         return;
     }
@@ -411,17 +412,17 @@ static PHP_METHOD(Math, im2col3d)
         out_channel_step = 1;
     }
     out_cell_step = filter_d*filter_h*filter_w*channels;
-    
+
     out_pos = cols_offset;
     batch_pos = images_offset;
-    
+
     start_vim_z = start_d*stride_d;
     start_vim_y = start_h*stride_h;
     start_vim_x = start_w*stride_w;
     vim_d = (out_d-1)*stride_d+filter_d;
     vim_h = (out_h-1)*stride_h+filter_h;
     vim_w = (out_w-1)*stride_w+filter_w;
-    
+
     im3d_stride(
         batches,
         batch_pos,
@@ -441,7 +442,7 @@ static PHP_METHOD(Math, im2col3d)
         stride_d,
         stride_h,
         stride_w,
-        
+
         reverse,
         images,
         filter_d,

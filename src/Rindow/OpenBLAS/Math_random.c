@@ -3,7 +3,7 @@
 static inline float php_rindow_rand_range_float(
     float low,float high)
 {
-    return low+(float)php_mt_rand()/(float)PHP_MT_RAND_MAX/2.0*(high-low);
+    return low+(float)php_mt_rand()/(float)PHP_MT_RAND_MAX/(float)2.0*(high-low);
 }
 
 static inline double php_rindow_rand_range_double(
@@ -18,17 +18,17 @@ static inline float php_rindow_rand_normal_float(
     float x,y;
     x=(float)(php_mt_rand_range(1,PHP_MT_RAND_MAX-1))/(float)PHP_MT_RAND_MAX;
     y=(float)(php_mt_rand_range(1,PHP_MT_RAND_MAX-1))/(float)PHP_MT_RAND_MAX;
-    
-    return sqrtf(-2*logf(x))*cosf(2*M_PI*y)*scale+mean;
+
+    return sqrtf((float)(-2)*logf(x))*cosf((float)2*(float)M_PI*y)*scale+mean;
 }
 
 static inline double php_rindow_rand_normal_double(
-    float mean,float scale)
+    double mean,double scale)
 {
     double x,y;
     x=(double)php_mt_rand_range(1,PHP_MT_RAND_MAX-1)/(double)PHP_MT_RAND_MAX;
     y=(double)php_mt_rand_range(1,PHP_MT_RAND_MAX-1)/(double)PHP_MT_RAND_MAX;
-    
+
     return sqrt(-2*log(x))*cos(2*M_PI*y)*scale+mean;
 }
 
@@ -95,12 +95,12 @@ static PHP_METHOD(Math, randomUniform)
         zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
         return;
     }
-    
-    php_mt_srand(seed);
-    
+
+    php_mt_srand((uint32_t)seed);
+
 
     switch(bufferX->dtype) {
-        
+
         case php_rindow_openblas_dtype_float32:
             {
                 float *x = &(((float *)bufferX->data)[offsetX]);
@@ -178,11 +178,11 @@ static PHP_METHOD(Math, randomNormal)
         return;
     }
 
-    php_mt_srand(seed);
-    
+    php_mt_srand((uint32_t)seed);
+
 
     switch(bufferX->dtype) {
-        
+
         case php_rindow_openblas_dtype_float32:
             {
                 float *x = &(((float *)bufferX->data)[offsetX]);
@@ -255,13 +255,13 @@ static PHP_METHOD(Math, randomSequence)
         return;
     }
 
-    php_mt_srand(seed);
-    
+    php_mt_srand((uint32_t)seed);
+
     data = (int64_t*)(bufferX->data);
     for(i=0;i<n;i++) {
         data[i+offsetX*incX] = i;
     }
-    
+
     for(i=0;i<size;i++) {
         zend_long tmp,idx;
         idx = php_mt_rand_range(i,n-1);

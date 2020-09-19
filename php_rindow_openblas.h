@@ -5,7 +5,7 @@
 
 # define phpext_rindow_openblas_ptr &rindow_openblas_module_entry
 
-# define PHP_RINDOW_OPENBLAS_VERSION "0.1.1"
+# define PHP_RINDOW_OPENBLAS_VERSION "0.1.4"
 
 # if defined(ZTS) && defined(COMPILE_DL_RINDOW_OPENBLAS)
 ZEND_TSRMLS_CACHE_EXTERN()
@@ -21,6 +21,16 @@ static inline php_rindow_openblas_blas_t* php_rindow_openblas_blas_fetch_object(
 	return (php_rindow_openblas_blas_t*) ((char*) obj - XtOffsetOf(php_rindow_openblas_blas_t, std));
 }
 #define Z_RINDOW_OPENBLAS_BLAS_OBJ_P(zv) (php_rindow_openblas_blas_fetch_object(Z_OBJ_P(zv)))
+
+// Rindow\OpenBLAS\Lapack object structures
+typedef struct {
+    zend_object std;
+} php_rindow_openblas_lapack_t;
+static inline php_rindow_openblas_lapack_t* php_rindow_openblas_lapack_fetch_object(zend_object* obj)
+{
+	return (php_rindow_openblas_lapack_t*) ((char*) obj - XtOffsetOf(php_rindow_openblas_lapack_t, std));
+}
+#define Z_RINDOW_OPENBLAS_LAPACK_OBJ_P(zv) (php_rindow_openblas_lapack_fetch_object(Z_OBJ_P(zv)))
 
 // Rindow\OpenBLAS\Math object structures
 typedef struct {
@@ -46,6 +56,7 @@ extern int php_rindow_openblas_dtype_is_bool(zend_long dtype);
 
 extern void php_rindow_openblas_buffer_init_ce(INIT_FUNC_ARGS);
 extern void php_rindow_openblas_blas_init_ce(INIT_FUNC_ARGS);
+extern void php_rindow_openblas_lapack_init_ce(INIT_FUNC_ARGS);
 extern void php_rindow_openblas_math_init_ce(INIT_FUNC_ARGS);
 extern zend_class_entry* php_rindow_openblas_buffer_ce;
 extern zend_module_entry rindow_openblas_module_entry;

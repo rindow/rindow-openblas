@@ -3,6 +3,7 @@
 ARG_ENABLE('rindow_openblas', 'rindow_openblas support', 'no');
 
 ARG_WITH('openblas', 'openblas support', 'no');
+ARG_WITH('flang', 'flang support', 'no');
 
 if (PHP_RINDOW_OPENBLAS != 'no') {
   var PHP_RINDOW_OPENBLAS_CFLAGS="\
@@ -29,7 +30,7 @@ if (PHP_RINDOW_OPENBLAS != 'no') {
   AC_DEFINE('OPENBLAS_HAVE_IAMIN', 1, 'openblas have iamin');
 
   EXTENSION('rindow_openblas', 'rindow_openblas.c', null, PHP_RINDOW_OPENBLAS_CFLAGS);
-  ADD_SOURCES(configure_module_dirname + "/src/Rindow/OpenBLAS", "Buffer.c Blas.c Math.c", "rindow_openblas");
+  ADD_SOURCES(configure_module_dirname + "/src/Rindow/OpenBLAS", "Buffer.c Blas.c Lapack.c Math.c", "rindow_openblas");
   if (CHECK_LIB("openblas.lib", "rindow_openblas", PHP_OPENBLAS + '/build/lib/Release')) {
       ADD_FLAG("LIBS_OPENBLAS", "openblas.lib");
       ADD_FLAG("LDFLAGS", '/libpath:"\\"' + PHP_OPENBLAS + '/build/lib/Release' + '\\"" ');
@@ -37,6 +38,9 @@ if (PHP_RINDOW_OPENBLAS != 'no') {
   if (CHECK_LIB("openblas.lib", "rindow_openblas", PHP_OPENBLAS + '/lib')) {
       ADD_FLAG("LIBS_OPENBLAS", "openblas.lib");
       ADD_FLAG("LDFLAGS", '/libpath:"\\"' + PHP_OPENBLAS + '/lib' + '\\"" ');
+  }
+  if (CHECK_LIB("flang.lib", "rindow_openblas", PHP_FLANG + '/lib')) {
+      ADD_FLAG("LDFLAGS", '/libpath:"\\"' + PHP_FLANG + '/lib' + '\\"" ');
   }
 
 }

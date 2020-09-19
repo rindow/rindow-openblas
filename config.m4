@@ -11,16 +11,20 @@ if test "$PHP_RINDOW_OPENBLAS" != "no"; then
   AC_MSG_CHECKING(for openblas)
   if test -x "$PKG_CONFIG"; then
     if $PKG_CONFIG --exists openblas; then
-      if $PKG_CONFIG openblas --atleast-version 0.2.0; then
-        LIBBLAS_CFLAGS=`$PKG_CONFIG openblas --cflags`
-        LIBBLAS_LIBDIR=`$PKG_CONFIG openblas --libs`
-        LIBBLAS_VERSON=`$PKG_CONFIG openblas --modversion`
-        AC_MSG_RESULT(from pkgconfig: version $LIBBLAS_VERSON)
-        if $PKG_CONFIG openblas --atleast-version 0.3.6; then
-            AC_DEFINE(OPENBLAS_HAVE_IAMIN, 1, [openblas have iamin])
+      if $PKG_CONFIG --exists lapacke; then
+        if $PKG_CONFIG openblas --atleast-version 0.2.0; then
+          LIBBLAS_CFLAGS="`$PKG_CONFIG openblas --cflags` `$PKG_CONFIG lapacke --libs`"
+          LIBBLAS_LIBDIR="`$PKG_CONFIG openblas --libs` `$PKG_CONFIG lapacke --libs`"
+          LIBBLAS_VERSON=`$PKG_CONFIG openblas --modversion`
+          AC_MSG_RESULT(from pkgconfig: version $LIBBLAS_VERSON)
+          if $PKG_CONFIG openblas --atleast-version 0.3.6; then
+              AC_DEFINE(OPENBLAS_HAVE_IAMIN, 1, [openblas have iamin])
+          fi
+        else
+          AC_MSG_ERROR(system openblas is too old: version 0.2.0 required)
         fi
       else
-        AC_MSG_ERROR(system openblas is too old: version 0.2.0 required)
+        AC_MSG_ERROR(lapacke not found)
       fi
     else
       AC_MSG_ERROR(openblas not found)
@@ -42,6 +46,7 @@ if test "$PHP_RINDOW_OPENBLAS" != "no"; then
      rindow_openblas.c \
      src/Rindow/OpenBLAS/Buffer.c \
      src/Rindow/OpenBLAS/Blas.c \
+     src/Rindow/OpenBLAS/Lapack.c \
      src/Rindow/OpenBLAS/Math.c \
   "
 

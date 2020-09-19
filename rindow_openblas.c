@@ -230,6 +230,7 @@ PHP_MINIT_FUNCTION(rindow_openblas)
 {
     php_rindow_openblas_buffer_init_ce(INIT_FUNC_ARGS_PASSTHRU);
     php_rindow_openblas_blas_init_ce(INIT_FUNC_ARGS_PASSTHRU);
+    php_rindow_openblas_lapack_init_ce(INIT_FUNC_ARGS_PASSTHRU);
     php_rindow_openblas_math_init_ce(INIT_FUNC_ARGS_PASSTHRU);
     return SUCCESS;
 }

@@ -164,6 +164,64 @@ int php_rindow_openblas_val2float(
 	return 0;
 }
 
+#define PHP_RINDOW_OPENBLAS_MATH_ADD_TEMPLATE(data_type) { \
+    data_type  *pDataX; \
+    data_type  *pDataY; \
+    pDataX = (data_type *)values; \
+    pDataY = (data_type *)target; \
+    for (i=0; i<n; i++) { \
+        *pDataY += *pDataX; \
+        pDataX+=incValue; \
+        pDataY+=incTarget; \
+    } \
+}
+int php_rindow_openblas_math_add(
+    zend_long n,
+    zend_long dtype,
+    void* values,
+    zend_long incValue,
+    void* target,
+    zend_long incTarget
+    )
+{
+    switch (dtype) {
+        zend_long i;
+        case php_rindow_openblas_dtype_float32:
+            PHP_RINDOW_OPENBLAS_MATH_ADD_TEMPLATE(float)
+            break;
+        case php_rindow_openblas_dtype_float64:
+            PHP_RINDOW_OPENBLAS_MATH_ADD_TEMPLATE(double)
+            break;
+        case php_rindow_openblas_dtype_int8:
+            PHP_RINDOW_OPENBLAS_MATH_ADD_TEMPLATE(int8_t)
+            break;
+        case php_rindow_openblas_dtype_uint8:
+            PHP_RINDOW_OPENBLAS_MATH_ADD_TEMPLATE(uint8_t)
+            break;
+        case php_rindow_openblas_dtype_int16:
+            PHP_RINDOW_OPENBLAS_MATH_ADD_TEMPLATE(int16_t)
+            break;
+        case php_rindow_openblas_dtype_uint16:
+            PHP_RINDOW_OPENBLAS_MATH_ADD_TEMPLATE(uint16_t)
+            break;
+        case php_rindow_openblas_dtype_int32:
+            PHP_RINDOW_OPENBLAS_MATH_ADD_TEMPLATE(int32_t)
+            break;
+        case php_rindow_openblas_dtype_uint32:
+            PHP_RINDOW_OPENBLAS_MATH_ADD_TEMPLATE(uint32_t)
+            break;
+        case php_rindow_openblas_dtype_int64:
+            PHP_RINDOW_OPENBLAS_MATH_ADD_TEMPLATE(int64_t)
+            break;
+        case php_rindow_openblas_dtype_uint64:
+            PHP_RINDOW_OPENBLAS_MATH_ADD_TEMPLATE(uint64_t)
+            break;
+        default:
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
+            return -1;
+    }
+    return 0;
+}
 /* Method Rindow\OpenBLAS\Math::
     public function sum(
         int $n,
@@ -1609,6 +1667,71 @@ static PHP_METHOD(Math, log)
     }
 }
 /* }}} */
+/*
+   X := tanh(X)
+
+   Method Rindow\OpenBLAS\Math::
+    public function tanh(
+        int $n,
+        Buffer $X, int $offsetX, int $incX) : void
+ {{{ */
+static PHP_METHOD(Math, tanh)
+{
+    php_rindow_openblas_buffer_t* buffer;
+    zend_long n;
+    zval* x=NULL;
+    zend_long offsetX;
+    zend_long incX;
+    zend_long i;
+
+    //if (zend_parse_parameters(ZEND_NUM_ARGS(), "lOll",
+    //        &n,&x,php_rindow_openblas_buffer_ce,&offsetX,&incX) == FAILURE) {
+    //    zend_throw_exception(spl_ce_InvalidArgumentException, "Invalid Arguments", 0);
+    //    return;
+    //}
+    ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 4, 4)
+        Z_PARAM_LONG(n)
+        Z_PARAM_OBJECT_OF_CLASS(x,php_rindow_openblas_buffer_ce)
+        Z_PARAM_LONG(offsetX)
+        Z_PARAM_LONG(incX)
+    ZEND_PARSE_PARAMETERS_END();
+
+    if(php_rindow_openblas_assert_shape_parameter(
+        PHP_RINDOW_OPENBLAS_ASSERT_N, n)) {
+        return;
+    }
+    buffer = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_vector_buffer_spec(
+        PHP_RINDOW_OPENBLAS_ASSERT_X, buffer,n,offsetX,incX)) {
+        return;
+    }
+    switch (buffer->dtype) {
+        case php_rindow_openblas_dtype_float32:
+            {
+                float *x = &(((float *)buffer->data)[offsetX]);
+                for(i=0;i<n;i++) {
+                    float t;
+                    t = x[i*incX];
+                    x[i*incX] = tanhf(t);
+                }
+            }
+            break;
+        case php_rindow_openblas_dtype_float64:
+            {
+                double *x = &(((double *)buffer->data)[offsetX]);
+                for(i=0;i<n;i++) {
+                    double t;
+                    t = x[i*incX];
+                    x[i*incX] = tanh(t);
+                }
+            }
+            break;
+        default:
+            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            return;
+    }
+}
+/* }}} */
 
 /*
    X := 0
@@ -2601,6 +2724,7 @@ static PHP_METHOD(Math, astype)
 
 #include "Math_select.c"
 #include "Math_scatter.c"
+#include "Math_slice.c"
 #include "Math_im2col1d.c"
 #include "Math_im2col2d.c"
 #include "Math_im2col3d.c"
@@ -2759,6 +2883,13 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Math_log, 0, 0, 4)
     ZEND_ARG_INFO(0, incX)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_tanh, 0, 0, 4)
+    ZEND_ARG_INFO(0, n)
+    ZEND_ARG_OBJ_INFO(0, x, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetX)
+    ZEND_ARG_INFO(0, incX)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(ai_Math_zeros, 0, 0, 4)
     ZEND_ARG_INFO(0, n)
     ZEND_ARG_OBJ_INFO(0, x, Rindow\\OpenBLAS\\Buffer, 0)
@@ -2766,7 +2897,7 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Math_zeros, 0, 0, 4)
     ZEND_ARG_INFO(0, incX)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(ai_Math_selectAxis0, 0, 0, 12)
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_selectAxis0, 0, 0, 13)
     ZEND_ARG_INFO(0, m)
     ZEND_ARG_INFO(0, n)
     ZEND_ARG_INFO(0, k)
@@ -2779,9 +2910,10 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Math_selectAxis0, 0, 0, 12)
     ZEND_ARG_OBJ_INFO(0, y, Rindow\\OpenBLAS\\Buffer, 0)
     ZEND_ARG_INFO(0, offsetY)
     ZEND_ARG_INFO(0, ldY)
+    ZEND_ARG_INFO(0, addMode)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(ai_Math_selectAxis1, 0, 0, 11)
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_selectAxis1, 0, 0, 12)
     ZEND_ARG_INFO(0, m)
     ZEND_ARG_INFO(0, n)
     ZEND_ARG_OBJ_INFO(0, a, Rindow\\OpenBLAS\\Buffer, 0)
@@ -2793,9 +2925,10 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Math_selectAxis1, 0, 0, 11)
     ZEND_ARG_OBJ_INFO(0, y, Rindow\\OpenBLAS\\Buffer, 0)
     ZEND_ARG_INFO(0, offsetY)
     ZEND_ARG_INFO(0, incY)
+    ZEND_ARG_INFO(0, addMode)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(ai_Math_scatterAxis0, 0, 0, 12)
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_scatterAxis0, 0, 0, 13)
     ZEND_ARG_INFO(0, m)
     ZEND_ARG_INFO(0, n)
     ZEND_ARG_INFO(0, k)
@@ -2808,9 +2941,10 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Math_scatterAxis0, 0, 0, 12)
     ZEND_ARG_OBJ_INFO(0, y, Rindow\\OpenBLAS\\Buffer, 0)
     ZEND_ARG_INFO(0, offsetY)
     ZEND_ARG_INFO(0, ldY)
+    ZEND_ARG_INFO(0, addMode)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(ai_Math_scatterAxis1, 0, 0, 11)
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_scatterAxis1, 0, 0, 12)
     ZEND_ARG_INFO(0, m)
     ZEND_ARG_INFO(0, n)
     ZEND_ARG_OBJ_INFO(0, a, Rindow\\OpenBLAS\\Buffer, 0)
@@ -2822,7 +2956,27 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Math_scatterAxis1, 0, 0, 11)
     ZEND_ARG_OBJ_INFO(0, y, Rindow\\OpenBLAS\\Buffer, 0)
     ZEND_ARG_INFO(0, offsetY)
     ZEND_ARG_INFO(0, incY)
+    ZEND_ARG_INFO(0, addMode)
 ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_slice, 0, 0, 15)
+    ZEND_ARG_INFO(0, reverse)
+    ZEND_ARG_INFO(0, addMode)
+    ZEND_ARG_INFO(0, m)
+    ZEND_ARG_INFO(0, n)
+    ZEND_ARG_INFO(0, k)
+    ZEND_ARG_OBJ_INFO(0, a, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetA)
+    ZEND_ARG_INFO(0, incA)
+    ZEND_ARG_OBJ_INFO(0, y, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetY)
+    ZEND_ARG_INFO(0, incY)
+    ZEND_ARG_INFO(0, startAxis0)
+    ZEND_ARG_INFO(0, sizeAxis0)
+    ZEND_ARG_INFO(0, startAxis1)
+    ZEND_ARG_INFO(0, sizeAxis1)
+ZEND_END_ARG_INFO()
+
 
 ZEND_BEGIN_ARG_INFO_EX(ai_Math_updateAddOnehot, 0, 0, 9)
     ZEND_ARG_INFO(0, m)
@@ -3023,11 +3177,13 @@ static zend_function_entry php_rindow_openblas_math_me[] = {
     PHP_ME(Math, pow,            ai_Math_pow,            ZEND_ACC_PUBLIC)
     PHP_ME(Math, exp,            ai_Math_exp,            ZEND_ACC_PUBLIC)
     PHP_ME(Math, log,            ai_Math_log,            ZEND_ACC_PUBLIC)
+    PHP_ME(Math, tanh,            ai_Math_tanh,            ZEND_ACC_PUBLIC)
     PHP_ME(Math, zeros,          ai_Math_zeros,          ZEND_ACC_PUBLIC)
     PHP_ME(Math, selectAxis0,    ai_Math_selectAxis0,    ZEND_ACC_PUBLIC)
     PHP_ME(Math, selectAxis1,    ai_Math_selectAxis1,    ZEND_ACC_PUBLIC)
     PHP_ME(Math, scatterAxis0,    ai_Math_scatterAxis0,    ZEND_ACC_PUBLIC)
     PHP_ME(Math, scatterAxis1,    ai_Math_scatterAxis1,    ZEND_ACC_PUBLIC)
+    PHP_ME(Math, slice,       ai_Math_slice,      ZEND_ACC_PUBLIC)
     PHP_ME(Math, updateAddOnehot,ai_Math_updateAddOnehot,ZEND_ACC_PUBLIC)
     PHP_ME(Math, softmax,        ai_Math_softmax,        ZEND_ACC_PUBLIC)
     PHP_ME(Math, equal,          ai_Math_equal,          ZEND_ACC_PUBLIC)

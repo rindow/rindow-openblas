@@ -23,11 +23,18 @@ Download the binary for your version of PHP.
 
 - https://github.com/rindow/rindow-openblas-binaries/
 
+Please download the following two binaries.
+
+- The PHP extension of rindow-openblas that matches the php version.
+- The flang runtime DLLs.
+
+If you are already using miniconda3, please use the flang runtime DLLs in it.
+
 How to setup
 ============
-
 Copy the shared library to the PHP extension directory and set it in php.ini.
 
+And then Set the execution path to the unzipped flang runtime DLLs.
 
 How to build from source code on Linux
 ======================================
@@ -42,9 +49,10 @@ Then install the php development environment according to the target php version
 $ sudo apt install build-essential autoconf automake libtool bison re2c
 $ sudo apt install pkg-config
 $ sudo apt install libopenblas-dev
+$ sudo apt install liblapacke-dev
 $ sudo apt install php7.4-dev
 ```
- use the latest version of openblas, download the source code from [the site](https://github.com/xianyi/OpenBLAS/releases), build it, and set the installation location of openblas in PKG_CONFIG_PATH
+ If you want to use the latest version of openblas, download the source code from [the site](https://github.com/xianyi/OpenBLAS/releases), build it, and set the installation location of openblas in PKG_CONFIG_PATH
 
 ### Build
 Run the target php version of phpize and build.
@@ -54,6 +62,7 @@ $ git clone https://github.com/rindow/rindow-openblas
 $ cd rindow_openblas
 $ phpize7.4
 $ ./configure --enable-rindow_openblas --with-php-config=php-config7.4
+$ make clean
 $ make
 $ make test
 ```
@@ -107,8 +116,8 @@ Anaconda3>cmake --build . --config Release
 ```
 
 
-Build extension for Windows
----------------------------
+Build the extension for Windows
+-------------------------------
 
 Please refer to the following URL for details.
 
@@ -140,7 +149,8 @@ C:\php-sdk>phpsdk-vc15-x64.bat
 ```shell
 $ cd /path/to/here
 $ /path/to/php-devel-pack-7.x.x-Win32-VC15-x64/phpize.bat
-$ configure --enable-rindow_openblas --with-prefix=/path/to/php-installation-path --with-openblas=/path/to/OpenBLAS-libray-built-directory
+$ configure --enable-rindow_openblas --with-prefix=/path/to/php-installation-path --with-openblas=/path/to/OpenBLAS-libray-built-directory --with-flang=/path/to/miniconda3-directory/Library
+$ nmake clean
 $ nmake
 $ nmake test
 ```

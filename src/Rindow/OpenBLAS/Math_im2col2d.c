@@ -108,7 +108,7 @@ static inline int im2d_stride(
     zend_long start_vim_x,
     zend_long stride_h,
     zend_long stride_w,
-    zend_long reverse,
+    zend_bool reverse,
     php_rindow_openblas_buffer_t* images,
     zend_long filter_h,
     zend_long filter_w,
@@ -159,7 +159,7 @@ static inline int im2d_stride(
                     out_pos,
                     out_filter_step,
                     out_channel_step
-                ); 
+                );
                 if(rc) {
                     return rc;
                 }
@@ -169,9 +169,10 @@ static inline int im2d_stride(
             }
             stride_h_pos += stride_h_step;
             vim_y += stride_h;
-        }    
+        }
         batch_pos += batch_step;
     }
+    return 0;
 }
 
 /*
@@ -284,7 +285,7 @@ static PHP_METHOD(Math, im2col2d)
     }
     if(images->dtype!=php_rindow_openblas_dtype_float32 &&
         images->dtype!=php_rindow_openblas_dtype_float64) {
-        zend_throw_exception(spl_ce_InvalidArgumentException, 
+        zend_throw_exception(spl_ce_InvalidArgumentException,
             "Unsupported data type", 0);
         return;
     }
@@ -353,15 +354,15 @@ static PHP_METHOD(Math, im2col2d)
         out_channel_step = 1;
     }
     out_cell_step = filter_h*filter_w*channels;
-    
+
     out_pos = cols_offset;
     batch_pos = images_offset;
-    
+
     start_vim_y = start_h*stride_h;
     start_vim_x = start_w*stride_w;
     vim_h = (out_h-1)*stride_h+filter_h;
     vim_w = (out_w-1)*stride_w+filter_w;
-    
+
     im2d_stride(
         batches,
         batch_pos,
@@ -376,7 +377,7 @@ static PHP_METHOD(Math, im2col2d)
         start_vim_x,
         stride_h,
         stride_w,
-        
+
         reverse,
         images,
         filter_h,

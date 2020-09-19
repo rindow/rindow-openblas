@@ -17,7 +17,6 @@ static inline int im1d_copyCell(
     zend_long x;
     zend_long filter_w_pos;
     zend_long out_filter_pos;
-    zend_long yy;
     zend_long xx;
     zend_long channel_pos;
     zend_long out_channel_pos;
@@ -91,7 +90,7 @@ static inline int im1d_stride(
     zend_long stride_w_step,
     zend_long start_vim_x,
     zend_long stride_w,
-    zend_long reverse,
+    zend_bool reverse,
     php_rindow_openblas_buffer_t* images,
     zend_long filter_w,
     zend_long channels,
@@ -129,16 +128,17 @@ static inline int im1d_stride(
                 out_pos,
                 out_filter_step,
                 out_channel_step
-            ); 
+            );
             if(rc) {
                 return rc;
             }
             stride_w_pos += stride_w_step;
             vim_x += stride_w;
             out_pos += out_cell_step;
-        }    
+        }
         batch_pos += batch_step;
     }
+    return 0;
 }
 
 /*
@@ -212,7 +212,7 @@ static PHP_METHOD(Math, im2col1d)
         Z_PARAM_LONG(filter_w)
         Z_PARAM_LONG(stride_w)
         Z_PARAM_BOOL(padding)
-        
+
         Z_PARAM_BOOL(channels_first)
         Z_PARAM_BOOL(cols_channels_first)
         Z_PARAM_OBJECT_OF_CLASS(cols_obj,php_rindow_openblas_buffer_ce)
@@ -234,7 +234,7 @@ static PHP_METHOD(Math, im2col1d)
     }
     if(images->dtype!=php_rindow_openblas_dtype_float32 &&
         images->dtype!=php_rindow_openblas_dtype_float64) {
-        zend_throw_exception(spl_ce_InvalidArgumentException, 
+        zend_throw_exception(spl_ce_InvalidArgumentException,
             "Unsupported data type", 0);
         return;
     }
@@ -293,13 +293,13 @@ static PHP_METHOD(Math, im2col1d)
         out_channel_step = 1;
     }
     out_cell_step = filter_w*channels;
-    
+
     out_pos = cols_offset;
     batch_pos = images_offset;
-    
+
     start_vim_x = start_w*stride_w;
     vim_w = (out_w-1)*stride_w+filter_w;
-    
+
     im1d_stride(
         batches,
         batch_pos,
@@ -309,7 +309,7 @@ static PHP_METHOD(Math, im2col1d)
         stride_w_step,
         start_vim_x,
         stride_w,
-        
+
         reverse,
         images,
         filter_w,
