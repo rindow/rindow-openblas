@@ -149,17 +149,53 @@ static PHP_METHOD(Math, slice)
                 double *a = &(((double *)bufferA->data)[pa]);
                 double *y = &(((double *)bufferY->data)[py]);
                 if(!reverse) {
-                    cblas_dcopy((blasint)k,
-                        a, (blasint)incA,
-                        y, (blasint)incY);
+                    if(!addMode) {
+                        cblas_dcopy((blasint)k,
+                            a, (blasint)incA,
+                            y, (blasint)incY);
+                    } else {
+                        cblas_daxpy((blasint)k,
+                            1.0,
+                            a, (blasint)incA,
+                            y, (blasint)incY);
+                    }
                 } else {
-                    cblas_dcopy((blasint)k,
-                        y, (blasint)incY,
-                        a, (blasint)incA);
+                    if(!addMode) {
+                        cblas_dcopy((blasint)k,
+                            y, (blasint)incY,
+                            a, (blasint)incA);
+                    } else {
+                        cblas_daxpy((blasint)k,
+                            1.0,
+                            y, (blasint)incY,
+                            a, (blasint)incA);
+                    }
                 }
             } else {
-                zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
-                return;
+                uint8_t *a, *y;
+                int rc;
+                int valueSize = php_rindow_openblas_dtype_to_valuesize(bufferA->dtype);
+                a = php_rindow_openblas_get_address(bufferA,pa,valueSize);
+                y = php_rindow_openblas_get_address(bufferY,py,valueSize);
+                if(!reverse) {
+                    if(!addMode) {
+                        rc = php_rindow_openblas_math_copy(
+                            k, bufferA->dtype, a, incA, y, incY);
+                    } else {
+                        rc = php_rindow_openblas_math_add(
+                            k, bufferA->dtype, a, incA, y, incY);
+                    }
+                } else {
+                    if(!addMode) {
+                        rc = php_rindow_openblas_math_copy(
+                            k, bufferA->dtype, y, incY, a, incA);
+                    } else {
+                        rc = php_rindow_openblas_math_add(
+                            k, bufferA->dtype, y, incY, a, incA);
+                    }
+                }
+                if(rc)
+                    return;
             }
         }
     }
