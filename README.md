@@ -147,6 +147,8 @@ C:\php-sdk>phpsdk-vc15-x64.bat
 ### Build
 
 ```shell
+$ PATH %PATH%;/path/to/miniconda3-directory/bin
+( It need the path of flang.dll. you can get it [here](https://github.com/rindow/rindow-openblas-binaries/tree/master/devel/windows))
 $ cd /path/to/here
 $ /path/to/php-devel-pack-7.x.x-Win32-VC15-x64/phpize.bat
 $ configure --enable-rindow_openblas --with-prefix=/path/to/php-installation-path --with-openblas=/path/to/OpenBLAS-libray-built-directory --with-flang=/path/to/miniconda3-directory/Library

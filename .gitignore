@@ -17,6 +17,7 @@ configure
 configure.ac
 configure.in
 configure.bat
+configure.js
 install-sh
 libtool
 ltmain.sh

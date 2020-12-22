@@ -395,6 +395,20 @@ static PHP_METHOD(Buffer, dtype)
 }
 /* }}} */
 
+/* Method Rindow\OpenBLAS\Buffer::value_size() {{{ */
+static PHP_METHOD(Buffer, value_size)
+{
+    php_rindow_openblas_buffer_t* intern;
+
+    intern = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(getThis());
+    if(intern->data==NULL) {
+        zend_throw_exception(spl_ce_DomainException, "uninitialized array", 0);
+        return;
+    }
+    RETURN_LONG(intern->value_size);
+}
+/* }}} */
+
 /* Method Rindow\OpenBLAS\Buffer::dump() : string {{{ */
 static PHP_METHOD(Buffer, dump)
 {
@@ -479,6 +493,7 @@ static zend_function_entry php_rindow_openblas_buffer_me[] = {
     PHP_ME(Buffer, offsetSet, ai_Buffer_offsetSet, ZEND_ACC_PUBLIC)
     PHP_ME(Buffer, offsetUnset, ai_Buffer_offsetUnset, ZEND_ACC_PUBLIC)
     PHP_ME(Buffer, count, ai_Buffer_void, ZEND_ACC_PUBLIC)
+    PHP_ME(Buffer, value_size, ai_Buffer_void, ZEND_ACC_PUBLIC)
     PHP_ME(Buffer, dtype, ai_Buffer_void, ZEND_ACC_PUBLIC)
     PHP_ME(Buffer, dump, ai_Buffer_void, ZEND_ACC_PUBLIC)
     PHP_ME(Buffer, load, ai_Buffer_void, ZEND_ACC_PUBLIC)

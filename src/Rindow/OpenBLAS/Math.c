@@ -2781,6 +2781,205 @@ static PHP_METHOD(Math, astype)
 }
 /* }}} */
 
+/*
+   B(m,n) :=  A(m,n) : trans=false
+   B(n,m) :=  A(m,n) : trans=true
+
+   Method Rindow\OpenBLAS\Math::
+    public function matrixcopy(
+        bool $trans,
+        int $m,
+        int $n,
+        float $alpha,
+        Buffer $A, int $offsetA, int $ldA,
+        Buffer $B, int $offsetB, int $ldB ) : void
+ {{{ */
+static PHP_METHOD(Math, matrixcopy)
+{
+    php_rindow_openblas_buffer_t* bufferA;
+    php_rindow_openblas_buffer_t* bufferB;
+    zend_bool trans;
+    zend_long m;
+    zend_long n;
+    double alpha;
+    zval* a=NULL;
+    zend_long offsetA;
+    zend_long ldA;
+    zval* b=NULL;
+    zend_long offsetB;
+    zend_long ldB;
+
+    //if (zend_parse_parameters(ZEND_NUM_ARGS(), "bllOllOll",
+    //        &broadcast,
+    //        &m,
+    //        &n,
+    //        &x,php_rindow_openblas_buffer_ce,&offsetX,&incX,
+    //        &a,php_rindow_openblas_buffer_ce,&offsetA,&ldA) == FAILURE) {
+    //    zend_throw_exception(spl_ce_InvalidArgumentException, "Invalid Arguments", 0);
+    //    return;
+    //}
+    ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 10, 10)
+        Z_PARAM_BOOL(trans)
+        Z_PARAM_LONG(m)
+        Z_PARAM_LONG(n)
+        Z_PARAM_DOUBLE(alpha)
+        Z_PARAM_OBJECT_OF_CLASS(a,php_rindow_openblas_buffer_ce)
+
+        Z_PARAM_LONG(offsetA)
+        Z_PARAM_LONG(ldA)
+        Z_PARAM_OBJECT_OF_CLASS(b,php_rindow_openblas_buffer_ce)
+        Z_PARAM_LONG(offsetB)
+        Z_PARAM_LONG(ldB)
+    ZEND_PARSE_PARAMETERS_END();
+
+    if(php_rindow_openblas_assert_shape_parameter(
+        PHP_RINDOW_OPENBLAS_ASSERT_M, m)) {
+        return;
+    }
+    if(php_rindow_openblas_assert_shape_parameter(
+        PHP_RINDOW_OPENBLAS_ASSERT_N, n)) {
+        return;
+    }
+    // Check Buffer A
+    bufferA = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(a);
+    if(php_rindow_openblas_assert_matrix_buffer_spec(
+        PHP_RINDOW_OPENBLAS_ASSERT_A, bufferA,m,n,offsetA,ldA)) {
+        return;
+    }
+
+    {
+        zend_long rows,cols;
+        if(!trans) {
+            rows = m;
+            cols = n;
+        } else {
+            rows = n;
+            cols = m;
+        }
+        // Check Buffer B
+        bufferB = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(b);
+        if(php_rindow_openblas_assert_matrix_buffer_spec(
+            PHP_RINDOW_OPENBLAS_ASSERT_B, bufferB,rows,cols,offsetB,ldB)) {
+            return;
+        }
+    }
+
+    if(bufferA->dtype!=bufferB->dtype) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch data type A and B", 0);
+        return;
+    }
+
+    switch (bufferA->dtype) {
+        case php_rindow_openblas_dtype_float32:
+            {
+                float *a = &(((float *)bufferA->data)[offsetA]);
+                float *b = &(((float *)bufferB->data)[offsetB]);
+                zend_long i,j;
+                if(!trans) {
+                    for(i=0;i<m;i++) {
+                        for(j=0;j<n;j++) {
+                            b[i*ldB+j] = (float)alpha * a[i*ldA+j];
+                        }
+                    }
+                } else {
+                    for(i=0;i<m;i++) {
+                        for(j=0;j<n;j++) {
+                            b[j*ldB+i] = (float)alpha * a[i*ldA+j];
+                        }
+                    }
+                }
+            }
+            break;
+        case php_rindow_openblas_dtype_float64:
+            {
+                double *a = &(((double *)bufferA->data)[offsetA]);
+                double *b = &(((double *)bufferB->data)[offsetB]);
+                zend_long i,j;
+                if(!trans) {
+                    for(i=0;i<m;i++) {
+                        for(j=0;j<n;j++) {
+                            b[i*ldB+j] = (double)alpha * a[i*ldA+j];
+                        }
+                    }
+                } else {
+                    for(i=0;i<m;i++) {
+                        for(j=0;j<n;j++) {
+                            b[j*ldB+i] = (double)alpha * a[i*ldA+j];
+                        }
+                    }
+                }
+            }
+            break;
+        default:
+            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type of A.", 0);
+            return;
+    }
+}
+/* }}} */
+
+/*
+   X(n) :=  P
+
+   Method Rindow\OpenBLAS\Math::
+    public function fill(
+        int $n,
+        Buffer $value, int $offsetV,
+        Buffer $X, int $offsetX, int $incX ) : void
+ {{{ */
+static PHP_METHOD(Math, fill)
+{
+    php_rindow_openblas_buffer_t* bufferV;
+    php_rindow_openblas_buffer_t* bufferX;
+    zend_long n;
+    zval* value=NULL;
+    zend_long offsetV;
+    zval* x=NULL;
+    zend_long offsetX;
+    zend_long incX;
+
+    ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 6, 6)
+        Z_PARAM_LONG(n)
+        Z_PARAM_OBJECT_OF_CLASS(value,php_rindow_openblas_buffer_ce)
+        Z_PARAM_LONG(offsetV)
+        Z_PARAM_OBJECT_OF_CLASS(x,php_rindow_openblas_buffer_ce)
+        Z_PARAM_LONG(offsetX)
+        Z_PARAM_LONG(incX)
+    ZEND_PARSE_PARAMETERS_END();
+
+    if(php_rindow_openblas_assert_shape_parameter(
+        PHP_RINDOW_OPENBLAS_ASSERT_N, n)) {
+        return;
+    }
+    // Check Buffer V
+    bufferV = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(value);
+    if(offsetV >= bufferV->size) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "value buffer size is too small", 0);
+        return;
+    }
+    // Check Buffer X
+    bufferX = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_vector_buffer_spec(
+        PHP_RINDOW_OPENBLAS_ASSERT_X, bufferX,n,offsetX,incX)) {
+        return;
+    }
+
+    if(bufferV->dtype!=bufferX->dtype) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch data type X and value", 0);
+        return;
+    }
+
+    {
+        size_t value_size = php_rindow_openblas_dtype_to_valuesize(bufferV->dtype);
+        char *value = &(((char *)(bufferV->data))[offsetV*value_size]);
+        char *x = &(((char *)(bufferX->data))[offsetX*value_size]);
+        zend_long i;
+        size_t step = incX*value_size;
+        for(i=0;i<n;i++,x+=step) {
+            memcpy(x,value,value_size);
+        }
+    }
+}
+/* }}} */
 
 #include "Math_select.c"
 #include "Math_scatter.c"
@@ -3115,7 +3314,30 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Math_astype, 0, 0, 8)
     ZEND_ARG_INFO(0, incY)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(ai_Math_im2col1d, 0, 0, 15)
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_matrixcopy, 0, 0, 10)
+    ZEND_ARG_INFO(0, trans)
+    ZEND_ARG_INFO(0, m)
+    ZEND_ARG_INFO(0, n)
+    ZEND_ARG_INFO(0, alpha)
+    ZEND_ARG_OBJ_INFO(0, a, Rindow\\OpenBLAS\\Buffer, 0)
+
+    ZEND_ARG_INFO(0, offsetA)
+    ZEND_ARG_INFO(0, ldA)
+    ZEND_ARG_OBJ_INFO(0, b, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetB)
+    ZEND_ARG_INFO(0, ldB)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_fill, 0, 0, 6)
+    ZEND_ARG_INFO(0, n)
+    ZEND_ARG_OBJ_INFO(0, value, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetV)
+    ZEND_ARG_OBJ_INFO(0, x, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetX)
+    ZEND_ARG_INFO(0, incX)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_im2col1d, 0, 0, 16)
     ZEND_ARG_INFO(0, reverse)
     ZEND_ARG_OBJ_INFO(0, images_obj, Rindow\\OpenBLAS\\Buffer, 0)
     ZEND_ARG_INFO(0, images_offset)
@@ -3129,9 +3351,11 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Math_im2col1d, 0, 0, 15)
     ZEND_ARG_INFO(0, padding)
 
     ZEND_ARG_INFO(0, channels_first)
+    ZEND_ARG_INFO(0, dilation_w)
     ZEND_ARG_INFO(0, cols_channels_first)
     ZEND_ARG_OBJ_INFO(0, cols_obj,Rindow\\OpenBLAS\\Buffer, 0)
     ZEND_ARG_INFO(0, cols_offset)
+
     ZEND_ARG_INFO(0, cols_size)
 ZEND_END_ARG_INFO()
 
@@ -3152,14 +3376,16 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Math_im2col2d, 0, 0, 18)
     ZEND_ARG_INFO(0, stride_w)
     ZEND_ARG_INFO(0, padding)
     ZEND_ARG_INFO(0, channels_first)
-    ZEND_ARG_INFO(0, cols_channels_first)
+    ZEND_ARG_INFO(0, dilation_h)
 
+    ZEND_ARG_INFO(0, dilation_w)
+    ZEND_ARG_INFO(0, cols_channels_first)
     ZEND_ARG_OBJ_INFO(0, cols_obj,Rindow\\OpenBLAS\\Buffer, 0)
     ZEND_ARG_INFO(0, cols_offset)
     ZEND_ARG_INFO(0, cols_size)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(ai_Math_im2col3d, 0, 0, 21)
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_im2col3d, 0, 0, 24)
     ZEND_ARG_INFO(0, reverse)
     ZEND_ARG_OBJ_INFO(0, images_obj, Rindow\\OpenBLAS\\Buffer, 0)
     ZEND_ARG_INFO(0, images_offset)
@@ -3180,10 +3406,13 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Math_im2col3d, 0, 0, 21)
 
     ZEND_ARG_INFO(0, padding)
     ZEND_ARG_INFO(0, channels_first)
+    ZEND_ARG_INFO(0, dilation_d)
+    ZEND_ARG_INFO(0, dilation_h)
+    ZEND_ARG_INFO(0, dilation_w)
+
     ZEND_ARG_INFO(0, cols_channels_first)
     ZEND_ARG_OBJ_INFO(0, cols_obj,Rindow\\OpenBLAS\\Buffer, 0)
     ZEND_ARG_INFO(0, cols_offset)
-
     ZEND_ARG_INFO(0, cols_size)
 ZEND_END_ARG_INFO()
 
@@ -3237,26 +3466,28 @@ static zend_function_entry php_rindow_openblas_math_me[] = {
     PHP_ME(Math, pow,            ai_Math_pow,            ZEND_ACC_PUBLIC)
     PHP_ME(Math, exp,            ai_Math_exp,            ZEND_ACC_PUBLIC)
     PHP_ME(Math, log,            ai_Math_log,            ZEND_ACC_PUBLIC)
-    PHP_ME(Math, tanh,            ai_Math_tanh,            ZEND_ACC_PUBLIC)
+    PHP_ME(Math, tanh,           ai_Math_tanh,           ZEND_ACC_PUBLIC)
     PHP_ME(Math, zeros,          ai_Math_zeros,          ZEND_ACC_PUBLIC)
     PHP_ME(Math, selectAxis0,    ai_Math_selectAxis0,    ZEND_ACC_PUBLIC)
     PHP_ME(Math, selectAxis1,    ai_Math_selectAxis1,    ZEND_ACC_PUBLIC)
-    PHP_ME(Math, scatterAxis0,    ai_Math_scatterAxis0,    ZEND_ACC_PUBLIC)
-    PHP_ME(Math, scatterAxis1,    ai_Math_scatterAxis1,    ZEND_ACC_PUBLIC)
-    PHP_ME(Math, slice,       ai_Math_slice,      ZEND_ACC_PUBLIC)
+    PHP_ME(Math, scatterAxis0,   ai_Math_scatterAxis0,   ZEND_ACC_PUBLIC)
+    PHP_ME(Math, scatterAxis1,   ai_Math_scatterAxis1,   ZEND_ACC_PUBLIC)
+    PHP_ME(Math, slice,          ai_Math_slice,          ZEND_ACC_PUBLIC)
     PHP_ME(Math, updateAddOnehot,ai_Math_updateAddOnehot,ZEND_ACC_PUBLIC)
     PHP_ME(Math, softmax,        ai_Math_softmax,        ZEND_ACC_PUBLIC)
     PHP_ME(Math, equal,          ai_Math_equal,          ZEND_ACC_PUBLIC)
+    PHP_ME(Math, astype,         ai_Math_astype,         ZEND_ACC_PUBLIC)
+    PHP_ME(Math, matrixcopy,     ai_Math_matrixcopy,     ZEND_ACC_PUBLIC)
+    PHP_ME(Math, fill,           ai_Math_fill,           ZEND_ACC_PUBLIC)
     PHP_ME(Math, reduceSum,      ai_Math_reduceSum,      ZEND_ACC_PUBLIC)
     PHP_ME(Math, reduceMax,      ai_Math_reduceMax,      ZEND_ACC_PUBLIC)
-    PHP_ME(Math, reduceArgMax,      ai_Math_reduceArgMax,      ZEND_ACC_PUBLIC)
-    PHP_ME(Math, astype,         ai_Math_astype,         ZEND_ACC_PUBLIC)
-    PHP_ME(Math, im2col1d,         ai_Math_im2col1d,         ZEND_ACC_PUBLIC)
-    PHP_ME(Math, im2col2d,         ai_Math_im2col2d,         ZEND_ACC_PUBLIC)
-    PHP_ME(Math, im2col3d,         ai_Math_im2col3d,         ZEND_ACC_PUBLIC)
-    PHP_ME(Math, randomUniform,         ai_Math_randomUniform,         ZEND_ACC_PUBLIC)
-    PHP_ME(Math, randomNormal,         ai_Math_randomNormal,         ZEND_ACC_PUBLIC)
-    PHP_ME(Math, randomSequence,         ai_Math_randomSequence,         ZEND_ACC_PUBLIC)
+    PHP_ME(Math, reduceArgMax,   ai_Math_reduceArgMax,   ZEND_ACC_PUBLIC)
+    PHP_ME(Math, im2col1d,       ai_Math_im2col1d,       ZEND_ACC_PUBLIC)
+    PHP_ME(Math, im2col2d,       ai_Math_im2col2d,       ZEND_ACC_PUBLIC)
+    PHP_ME(Math, im2col3d,       ai_Math_im2col3d,       ZEND_ACC_PUBLIC)
+    PHP_ME(Math, randomUniform,  ai_Math_randomUniform,  ZEND_ACC_PUBLIC)
+    PHP_ME(Math, randomNormal,   ai_Math_randomNormal,   ZEND_ACC_PUBLIC)
+    PHP_ME(Math, randomSequence, ai_Math_randomSequence, ZEND_ACC_PUBLIC)
     PHP_FE_END
     /* clang-format on */
 };

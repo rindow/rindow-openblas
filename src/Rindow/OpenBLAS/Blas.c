@@ -585,6 +585,274 @@ static PHP_METHOD(Blas, nrm2)
 /* }}} */
 
 /* Method Rindow\OpenBLAS\Blas::
+    public function rotg(
+        Buffer $A, int $offsetA,
+        Buffer $B, int $offsetB,
+        Buffer $C, int $offsetC,
+        Buffer $S, int $offsetS,
+    ) : void
+ {{{ */
+static PHP_METHOD(Blas, rotg)
+{
+    zval* a;
+    zend_long offsetA;
+    zval* b;
+    zend_long offsetB;
+    zval* c;
+    zend_long offsetC;
+    zval* s;
+    zend_long offsetS;
+    php_rindow_openblas_buffer_t* bufferA;
+    php_rindow_openblas_buffer_t* bufferB;
+    php_rindow_openblas_buffer_t* bufferC;
+    php_rindow_openblas_buffer_t* bufferS;
+
+    ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 8, 8)
+        Z_PARAM_OBJECT_OF_CLASS(a,php_rindow_openblas_buffer_ce)
+        Z_PARAM_LONG(offsetA)
+        Z_PARAM_OBJECT_OF_CLASS(b,php_rindow_openblas_buffer_ce)
+        Z_PARAM_LONG(offsetB)
+        Z_PARAM_OBJECT_OF_CLASS(c,php_rindow_openblas_buffer_ce)
+        Z_PARAM_LONG(offsetC)
+        Z_PARAM_OBJECT_OF_CLASS(s,php_rindow_openblas_buffer_ce)
+        Z_PARAM_LONG(offsetS)
+    ZEND_PARSE_PARAMETERS_END();
+
+    // Check Buffer A
+    bufferA = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(a);
+    if(php_rindow_openblas_assert_vector_buffer_spec(
+        PHP_RINDOW_OPENBLAS_ASSERT_X, bufferA,1,offsetA,1)) {
+        return;
+    }
+
+    // Check Buffer B
+    bufferB = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(b);
+    if(php_rindow_openblas_assert_vector_buffer_spec(
+        PHP_RINDOW_OPENBLAS_ASSERT_Y, bufferB,1,offsetB,1)) {
+        return;
+    }
+
+    // Check Buffer C
+    bufferC = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(c);
+    if(php_rindow_openblas_assert_vector_buffer_spec(
+        PHP_RINDOW_OPENBLAS_ASSERT_X, bufferC,1,offsetC,1)) {
+        return;
+    }
+
+    // Check Buffer S
+    bufferS = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(s);
+    if(php_rindow_openblas_assert_vector_buffer_spec(
+        PHP_RINDOW_OPENBLAS_ASSERT_Y, bufferS,1,offsetS,1)) {
+        return;
+    }
+
+
+    // Check Buffer A and B and C and S
+    if(bufferA->dtype!=bufferB->dtype || bufferB->dtype!=bufferC->dtype ||
+        bufferC->dtype!=bufferS->dtype || bufferS->dtype!=bufferA->dtype) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch data type for A,B,C and S", 0);
+        return;
+    }
+
+    switch (bufferA->dtype) {
+        case php_rindow_openblas_dtype_float32:
+            cblas_srotg(
+                &(((float *)bufferA->data)[offsetA]),
+                &(((float *)bufferB->data)[offsetB]),
+                &(((float *)bufferC->data)[offsetC]),
+                &(((float *)bufferS->data)[offsetS])
+            );
+            break;
+        case php_rindow_openblas_dtype_float64:
+            cblas_drotg(
+                &(((double *)bufferA->data)[offsetA]),
+                &(((double *)bufferB->data)[offsetB]),
+                &(((double *)bufferC->data)[offsetC]),
+                &(((double *)bufferS->data)[offsetS])
+            );
+            break;
+        default:
+            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            return;
+    }
+}
+/* }}} */
+
+/* Method Rindow\OpenBLAS\Blas::
+    public function rot(
+        int $n,
+        Buffer $X, int $offsetX, int $incX,
+        Buffer $Y, int $offsetY, int $incY,
+        Buffer $C, int $offsetC,
+        Buffer $S, int $offsetS,
+    ) : void
+ {{{ */
+static PHP_METHOD(Blas, rot)
+{
+    zend_long n;
+    zval* x;
+    zend_long offsetX;
+    zend_long incX;
+    zval* y;
+    zend_long offsetY;
+    zend_long incY;
+    zval* c;
+    zend_long offsetC;
+    zval* s;
+    zend_long offsetS;
+    php_rindow_openblas_buffer_t* bufferX;
+    php_rindow_openblas_buffer_t* bufferY;
+    php_rindow_openblas_buffer_t* bufferC;
+    php_rindow_openblas_buffer_t* bufferS;
+
+    ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 11, 11)
+        Z_PARAM_LONG(n)
+        Z_PARAM_OBJECT_OF_CLASS(x,php_rindow_openblas_buffer_ce)
+        Z_PARAM_LONG(offsetX)
+        Z_PARAM_LONG(incX)
+        Z_PARAM_OBJECT_OF_CLASS(y,php_rindow_openblas_buffer_ce)
+        Z_PARAM_LONG(offsetY)
+        Z_PARAM_LONG(incY)
+        Z_PARAM_OBJECT_OF_CLASS(c,php_rindow_openblas_buffer_ce)
+        Z_PARAM_LONG(offsetC)
+        Z_PARAM_OBJECT_OF_CLASS(s,php_rindow_openblas_buffer_ce)
+        Z_PARAM_LONG(offsetS)
+    ZEND_PARSE_PARAMETERS_END();
+
+    if(php_rindow_openblas_assert_shape_parameter(
+        PHP_RINDOW_OPENBLAS_ASSERT_N, n)) {
+        return;
+    }
+    // Check Buffer X
+    bufferX = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_vector_buffer_spec(
+        PHP_RINDOW_OPENBLAS_ASSERT_X, bufferX,n,offsetX,incX)) {
+        return;
+    }
+
+    // Check Buffer Y
+    bufferY = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(y);
+    if(php_rindow_openblas_assert_vector_buffer_spec(
+        PHP_RINDOW_OPENBLAS_ASSERT_Y, bufferY,n,offsetY,incY)) {
+        return;
+    }
+
+    // Check Buffer C
+    bufferC = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(c);
+    if(php_rindow_openblas_assert_vector_buffer_spec(
+        PHP_RINDOW_OPENBLAS_ASSERT_X, bufferC,1,offsetC,1)) {
+        return;
+    }
+
+    // Check Buffer S
+    bufferS = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(s);
+    if(php_rindow_openblas_assert_vector_buffer_spec(
+        PHP_RINDOW_OPENBLAS_ASSERT_Y, bufferS,1,offsetS,1)) {
+        return;
+    }
+
+    // Check Buffer X and Y
+    if(bufferX->dtype!=bufferY->dtype||bufferY->dtype!=bufferC->dtype||
+        bufferC->dtype!=bufferS->dtype) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch data type for X,Y,C and S", 0);
+        return;
+    }
+
+    switch (bufferX->dtype) {
+        case php_rindow_openblas_dtype_float32:
+            cblas_srot((blasint)n,
+                &(((float *)bufferX->data)[offsetX]), (blasint)incX,
+                &(((float *)bufferY->data)[offsetY]), (blasint)incY,
+                ((float *)bufferC->data)[offsetC],
+                ((float *)bufferS->data)[offsetS]
+            );
+            break;
+        case php_rindow_openblas_dtype_float64:
+            cblas_drot((blasint)n,
+                &(((double *)bufferX->data)[offsetX]), (blasint)incX,
+                &(((double *)bufferY->data)[offsetY]), (blasint)incY,
+                ((double *)bufferC->data)[offsetC],
+                ((double *)bufferS->data)[offsetS]
+            );
+            break;
+        default:
+            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            return;
+    }
+}
+/* }}} */
+
+/* Method Rindow\OpenBLAS\Blas::
+    public function swap(
+        int $n,
+        Buffer $X, int $offsetX, int $incX,
+        Buffer $Y, int $offsetY, int $incY ) : void
+ {{{ */
+static PHP_METHOD(Blas, swap)
+{
+    php_rindow_openblas_buffer_t* bufferX;
+    php_rindow_openblas_buffer_t* bufferY;
+    zend_long n;
+    zval* x=NULL;
+    zend_long offsetX;
+    zend_long incX;
+    zval* y=NULL;
+    zend_long offsetY;
+    zend_long incY;
+
+    ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 7, 7)
+        Z_PARAM_LONG(n)
+        Z_PARAM_OBJECT_OF_CLASS(x,php_rindow_openblas_buffer_ce)
+        Z_PARAM_LONG(offsetX)
+        Z_PARAM_LONG(incX)
+        Z_PARAM_OBJECT_OF_CLASS(y,php_rindow_openblas_buffer_ce)
+        Z_PARAM_LONG(offsetY)
+        Z_PARAM_LONG(incY)
+    ZEND_PARSE_PARAMETERS_END();
+
+    if(php_rindow_openblas_assert_shape_parameter(
+        PHP_RINDOW_OPENBLAS_ASSERT_N, n)) {
+        return;
+    }
+    // Check Buffer X
+    bufferX = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_vector_buffer_spec(
+        PHP_RINDOW_OPENBLAS_ASSERT_X, bufferX,n,offsetX,incX)) {
+        return;
+    }
+
+    // Check Buffer Y
+    bufferY = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(y);
+    if(php_rindow_openblas_assert_vector_buffer_spec(
+        PHP_RINDOW_OPENBLAS_ASSERT_Y, bufferY,n,offsetY,incY)) {
+        return;
+    }
+
+    // Check Buffer X and Y
+    if(bufferX->dtype!=bufferY->dtype) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch data type for X and Y", 0);
+        return;
+    }
+
+    switch (bufferX->dtype) {
+        case php_rindow_openblas_dtype_float32:
+            cblas_sswap((blasint)n,
+                &(((float *)bufferX->data)[offsetX]), (blasint)incX,
+                &(((float *)bufferY->data)[offsetY]), (blasint)incY);
+            break;
+        case php_rindow_openblas_dtype_float64:
+            cblas_dswap((blasint)n,
+                &(((double *)bufferX->data)[offsetX]), (blasint)incX,
+                &(((double *)bufferY->data)[offsetY]), (blasint)incY);
+            break;
+        default:
+            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            return;
+    }
+}
+/* }}} */
+
+/* Method Rindow\OpenBLAS\Blas::
     public function gemv(
         int $order,
         int $trans,
@@ -952,6 +1220,41 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Blas_nrm2, 0, 0, 4)
     ZEND_ARG_INFO(0, incX)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(ai_Blas_rotg, 0, 0, 8)
+    ZEND_ARG_OBJ_INFO(0, a, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetA)
+    ZEND_ARG_OBJ_INFO(0, b, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetB)
+    ZEND_ARG_OBJ_INFO(0, c, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetC)
+    ZEND_ARG_OBJ_INFO(0, s, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetS)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ai_Blas_rot, 0, 0, 11)
+    ZEND_ARG_INFO(0, n)
+    ZEND_ARG_OBJ_INFO(0, x, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetX)
+    ZEND_ARG_INFO(0, incX)
+    ZEND_ARG_OBJ_INFO(0, y, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetY)
+    ZEND_ARG_INFO(0, incY)
+    ZEND_ARG_OBJ_INFO(0, c, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetC)
+    ZEND_ARG_OBJ_INFO(0, s, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetS)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ai_Blas_swap, 0, 0, 7)
+    ZEND_ARG_INFO(0, n)
+    ZEND_ARG_OBJ_INFO(0, x, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetX)
+    ZEND_ARG_INFO(0, incX)
+    ZEND_ARG_OBJ_INFO(0, y, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_INFO(0, offsetY)
+    ZEND_ARG_INFO(0, incY)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(ai_Blas_gemv, 0, 0, 15)
     ZEND_ARG_INFO(0, order)
     ZEND_ARG_INFO(0, trans)
@@ -1010,6 +1313,9 @@ static zend_function_entry php_rindow_openblas_blas_me[] = {
 #endif
     PHP_ME(Blas, copy,  ai_Blas_copy,  ZEND_ACC_PUBLIC)
     PHP_ME(Blas, nrm2,  ai_Blas_nrm2,  ZEND_ACC_PUBLIC)
+    PHP_ME(Blas, rotg,  ai_Blas_rotg,  ZEND_ACC_PUBLIC)
+    PHP_ME(Blas, rot,   ai_Blas_rot,   ZEND_ACC_PUBLIC)
+    PHP_ME(Blas, swap,  ai_Blas_swap,  ZEND_ACC_PUBLIC)
     PHP_ME(Blas, gemv,  ai_Blas_gemv,  ZEND_ACC_PUBLIC)
     PHP_ME(Blas, gemm,  ai_Blas_gemm,  ZEND_ACC_PUBLIC)
     PHP_FE_END

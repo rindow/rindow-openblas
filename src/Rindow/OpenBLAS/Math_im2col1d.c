@@ -1,35 +1,36 @@
-static inline int im1d_copyCell(
+static inline int im2col1d_copyCell(
     zend_bool reverse,
     php_rindow_openblas_buffer_t *images,
     zend_long images_pos,
-    zend_long filter_w,
+    zend_long im_w,
     zend_long channels,
     zend_long channel_step,
     zend_long filter_w_step,
     zend_long vim_x,
-    zend_long vim_w,
+    zend_long vfilter_w,
+    zend_long dilation_w,
     php_rindow_openblas_buffer_t *out,
     zend_long out_pos,
     zend_long out_filter_step,
     zend_long out_channel_step
     )
 {
-    zend_long x;
+    zend_long vfilter_x;
     zend_long filter_w_pos;
     zend_long out_filter_pos;
-    zend_long xx;
+    zend_long input_x;
     zend_long channel_pos;
     zend_long out_channel_pos;
     zend_long c;
 
     filter_w_pos = images_pos;
     out_filter_pos = out_pos;
-    for(x=0; x<filter_w; x++) {
+    for(vfilter_x=0; vfilter_x<vfilter_w; vfilter_x+=dilation_w) {
         channel_pos = filter_w_pos;
         out_channel_pos = out_filter_pos;
-        xx = x+vim_x;
+        input_x = vim_x+vfilter_x;
         for(c=0; c<channels; c++) {
-            if(xx<0 || xx>=vim_w) {
+            if(input_x<0 || input_x>=im_w) {
                 if(out_channel_pos<0 ||out_channel_pos>=out->size) {
                    zend_throw_exception(spl_ce_RuntimeException, "cols data out of range", 0);
                     return -1;
@@ -81,49 +82,117 @@ static inline int im1d_copyCell(
 }
 
 
-static inline int im1d_stride(
-    zend_long batches,
-    zend_long batch_pos,
-    zend_long batch_step,
-    zend_long start_w,
-    zend_long end_w,
-    zend_long stride_w_step,
-    zend_long start_vim_x,
-    zend_long stride_w,
+static inline int im2col1d_execute(
     zend_bool reverse,
     php_rindow_openblas_buffer_t* images,
-    zend_long filter_w,
+    zend_long images_offset,
+    zend_long images_size,
+    zend_long batches,
+
+    zend_long im_w,
     zend_long channels,
-    zend_long channel_step,
-    zend_long filter_w_step,
-    zend_long vim_w,
+    zend_long filter_w,
+    zend_long stride_w,
+    zend_bool padding,
+
+    zend_bool channels_first,
+    zend_long dilation_w,
+    zend_bool cols_channels_first,
     php_rindow_openblas_buffer_t* cols,
-    zend_long out_pos,
-    zend_long out_cell_step,
-    zend_long out_filter_step,
-    zend_long out_channel_step
+    zend_long cols_offset,
+
+    zend_long cols_size
     )
 {
+    zend_long out_w;
+    zend_long stride_w_step;
+    zend_long batch_step;
+    zend_long channel_step;
+    zend_long filter_w_step;
+    zend_long out_filter_step;
+    zend_long out_channel_step;
+    zend_long out_cell_step;
+    zend_long out_pos;
+    zend_long batch_pos;
+    zend_long padding_w;
+    zend_long im_w_step;
+
     zend_long batch;
-    zend_long x;
     zend_long stride_w_pos;
     zend_long vim_x;
+    zend_long vim_w;
+    zend_long vfilter_w;
+
+    if((batches*im_w*channels)
+        !=images_size) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch images buffer size and images shape", 0);
+        return -1;
+    }
+    out_w = ((im_w-(filter_w-1)*dilation_w-1)/stride_w)+1;
+    if(out_w<=0) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "Invalid shape or parameters.", 0);
+        return -1;
+    }
+    if(padding) {
+        if((batches*
+            im_w*filter_w*
+            channels)!=cols_size) {
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch cols buffer size and images shape", 0);
+            return -1;
+        }
+        padding_w = ((im_w-1)*stride_w-im_w+(filter_w-1)*dilation_w+1)/2;
+        out_w = im_w;
+    } else {
+        if((batches*
+            out_w*filter_w*
+            channels)!=cols_size) {
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch cols buffer size and images shape", 0);
+            return -1;
+        }
+        padding_w = 0;
+    }
+    if(channels_first) {
+        im_w_step =    1;
+        channel_step = im_w;
+        batch_step =   im_w*channels;
+    } else {
+        channel_step = 1;
+        im_w_step =  channels;
+        batch_step = channels*im_w;
+    }
+    stride_w_step = im_w_step*stride_w;
+    filter_w_step = im_w_step*dilation_w;
+
+    if(cols_channels_first) {
+        out_filter_step = 1;
+        out_channel_step = filter_w;
+    } else {
+        out_filter_step = channels;
+        out_channel_step = 1;
+    }
+    out_cell_step = filter_w*channels;
+
+    batch_pos = images_offset-im_w_step*padding_w;
+    out_pos = cols_offset;
+
+    vim_w = out_w*stride_w;
+    vfilter_w = filter_w*dilation_w;
 
     for(batch=0; batch<batches;batch++) {
-        stride_w_pos = batch_pos+(start_w*stride_w_step);
-        vim_x = start_vim_x;
-        for(x=start_w;x<end_w;x++) {
+        stride_w_pos = batch_pos;
+        for(vim_x=0;vim_x<vim_w;vim_x+=stride_w) {
             int rc;
-            rc = im1d_copyCell(
+            rc = im2col1d_copyCell(
                 reverse,
                 images,
                 stride_w_pos,
-                filter_w,
+                im_w,
                 channels,
                 channel_step,
                 filter_w_step,
-                vim_x,
-                vim_w,
+                vim_x-padding_w,
+                vfilter_w,
+                dilation_w,
                 cols,
                 out_pos,
                 out_filter_step,
@@ -133,7 +202,6 @@ static inline int im1d_stride(
                 return rc;
             }
             stride_w_pos += stride_w_step;
-            vim_x += stride_w;
             out_pos += out_cell_step;
         }
         batch_pos += batch_step;
@@ -155,14 +223,15 @@ static inline int im1d_stride(
         int $im_w,
         int $channels,
         int $filter_w,
-
         int $stride_w,
         bool $padding,
-        bool $channels_first,
-        bool $cols_channels_first,
 
+        bool $channels_first,
+        int $dilation_w,
+        bool $cols_channels_first,
         Buffer $cols,
         int $cols_offset,
+
         int $cols_size
     ) : void
  {{{ */
@@ -179,28 +248,16 @@ static PHP_METHOD(Math, im2col1d)
     zend_long stride_w;
     zend_bool padding;
     zend_bool channels_first;
+    zend_long dilation_w;
     zend_bool cols_channels_first;
     php_rindow_openblas_buffer_t* cols;
     zend_long cols_offset;
     zend_long cols_size;
+
     zval* images_obj=NULL;
     zval* cols_obj=NULL;
-    zend_long out_w;
-    zend_long start_w;
-    zend_long end_w;
-    zend_long stride_w_step;
-    zend_long batch_step;
-    zend_long channel_step;
-    zend_long filter_w_step;
-    zend_long out_filter_step;
-    zend_long out_channel_step;
-    zend_long out_cell_step;
-    zend_long out_pos;
-    zend_long batch_pos;
-    zend_long start_vim_x;
-    zend_long vim_w;
 
-    ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 15, 15)
+    ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 16, 16)
         Z_PARAM_BOOL(reverse)
         Z_PARAM_OBJECT_OF_CLASS(images_obj,php_rindow_openblas_buffer_ce)
         Z_PARAM_LONG(images_offset)
@@ -214,9 +271,11 @@ static PHP_METHOD(Math, im2col1d)
         Z_PARAM_BOOL(padding)
 
         Z_PARAM_BOOL(channels_first)
+        Z_PARAM_LONG(dilation_w)
         Z_PARAM_BOOL(cols_channels_first)
         Z_PARAM_OBJECT_OF_CLASS(cols_obj,php_rindow_openblas_buffer_ce)
         Z_PARAM_LONG(cols_offset)
+
         Z_PARAM_LONG(cols_size)
     ZEND_PARSE_PARAMETERS_END();
 
@@ -245,83 +304,26 @@ static PHP_METHOD(Math, im2col1d)
         return;
     }
 
-    if((batches*im_w*channels)
-        !=images_size) {
-        zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch images buffer size and images shape", 0);
-        return;
-    }
-    out_w = ((im_w-filter_w)/stride_w)+1;
-    if(padding) {
-        if((batches*
-            im_w*filter_w*
-            channels)!=cols_size) {
-            zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch cols buffer size and images shape", 0);
-            return;
-        }
-        start_w = -((im_w-out_w)/2);
-        end_w = start_w+im_w;
-    } else {
-        start_w = 0;
-        end_w = out_w;
-        if((batches*
-            out_w*filter_w*
-            channels)!=cols_size) {
-            zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch cols buffer size and images shape", 0);
-            return;
-        }
-    }
-    if(channels_first) {
-        // stride parameters
-        stride_w_step = stride_w;
-        batch_step = channels*im_w;
-        // copy parameters
-        channel_step = im_w;
-        filter_w_step = 1;
-    } else {
-        // stride parameters
-        stride_w_step = channels*stride_w;
-        batch_step = channels*im_w;
-        // copy parameters
-        channel_step = 1;
-        filter_w_step = channels;
-    }
-    if(cols_channels_first) {
-        out_filter_step = 1;
-        out_channel_step = filter_w;
-    } else {
-        out_filter_step = channels;
-        out_channel_step = 1;
-    }
-    out_cell_step = filter_w*channels;
-
-    out_pos = cols_offset;
-    batch_pos = images_offset;
-
-    start_vim_x = start_w*stride_w;
-    vim_w = (out_w-1)*stride_w+filter_w;
-
-    im1d_stride(
-        batches,
-        batch_pos,
-        batch_step,
-        start_w,
-        end_w,
-        stride_w_step,
-        start_vim_x,
-        stride_w,
-
+    im2col1d_execute(
         reverse,
         images,
-        filter_w,
+        images_offset,
+        images_size,
+        batches,
+
+        im_w,
         channels,
-        channel_step,
-        filter_w_step,
-        vim_w,
+        filter_w,
+        stride_w,
+        padding,
+
+        channels_first,
+        dilation_w,
+        cols_channels_first,
         cols,
-        out_pos,
-        out_cell_step,
-        out_filter_step,
-        out_channel_step
+        cols_offset,
+
+        cols_size
     );
     return;
 }

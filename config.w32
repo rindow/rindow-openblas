@@ -16,11 +16,12 @@ if (PHP_RINDOW_OPENBLAS != 'no') {
         /I" + PHP_OPENBLAS + "/build \
         /I" + PHP_OPENBLAS + "/build/generated \
     ";
-  }
-  if(CHECK_HEADER_ADD_INCLUDE("cblas.h", "rindow_openblas", PHP_OPENBLAS + '/include')) {
+  } else if(CHECK_HEADER_ADD_INCLUDE("cblas.h", "rindow_openblas", PHP_OPENBLAS + '/include')) {
     PHP_RINDOW_OPENBLAS_CFLAGS = PHP_RINDOW_OPENBLAS_CFLAGS + "\
         /I" + PHP_OPENBLAS + "/include \
     ";
+  } else {
+    ERROR("NOT FOUND: OpenBLAS header files. Please set --with-openblas=/some/directory/path");
   }
 
 	// Condense whitespace in CFLAGS
@@ -34,13 +35,15 @@ if (PHP_RINDOW_OPENBLAS != 'no') {
   if (CHECK_LIB("openblas.lib", "rindow_openblas", PHP_OPENBLAS + '/build/lib/Release')) {
       ADD_FLAG("LIBS_OPENBLAS", "openblas.lib");
       ADD_FLAG("LDFLAGS", '/libpath:"\\"' + PHP_OPENBLAS + '/build/lib/Release' + '\\"" ');
-  }
-  if (CHECK_LIB("openblas.lib", "rindow_openblas", PHP_OPENBLAS + '/lib')) {
+  } else if (CHECK_LIB("openblas.lib", "rindow_openblas", PHP_OPENBLAS + '/lib')) {
       ADD_FLAG("LIBS_OPENBLAS", "openblas.lib");
       ADD_FLAG("LDFLAGS", '/libpath:"\\"' + PHP_OPENBLAS + '/lib' + '\\"" ');
+  } else {
+      ERROR("NOT FOUND: OpenBLAS library files. Please set --with-openblas=/some/directory/path");
   }
   if (CHECK_LIB("flang.lib", "rindow_openblas", PHP_FLANG + '/lib')) {
       ADD_FLAG("LDFLAGS", '/libpath:"\\"' + PHP_FLANG + '/lib' + '\\"" ');
+  } else {
+      ERROR("NOT FOUND: flang library files. Please set --with-flang=/some/miniconda3/directory/Library");
   }
-
 }
