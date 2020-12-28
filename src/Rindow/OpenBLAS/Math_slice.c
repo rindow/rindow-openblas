@@ -18,8 +18,8 @@
  {{{ */
 static PHP_METHOD(Math, slice)
 {
-    php_rindow_openblas_buffer_t* bufferA;
-    php_rindow_openblas_buffer_t* bufferY;
+    php_interop_polite_math_matrix_linear_buffer_t* bufferA;
+    php_interop_polite_math_matrix_linear_buffer_t* bufferY;
     zend_bool reverse;
     zend_bool addMode;
     zend_long m;
@@ -45,10 +45,10 @@ static PHP_METHOD(Math, slice)
         Z_PARAM_LONG(n)
         Z_PARAM_LONG(k)
 
-        Z_PARAM_OBJECT_OF_CLASS(obja,php_rindow_openblas_buffer_ce)
+        Z_PARAM_ZVAL(obja) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetA)
         Z_PARAM_LONG(incA)
-        Z_PARAM_OBJECT_OF_CLASS(objy,php_rindow_openblas_buffer_ce)
+        Z_PARAM_ZVAL(objy) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetY)
 
         Z_PARAM_LONG(incY)
@@ -87,13 +87,13 @@ static PHP_METHOD(Math, slice)
         return;
     }
     // Check Buffer A
-    bufferA = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(obja);
+    bufferA = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(obja);
     if(m*n*k*incA+offsetA > bufferA->size) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch BufferA size and m,n,k", 0);
         return;
     }
     // Check Buffer Y
-    bufferY = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(objy);
+    bufferY = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(objy);
     if(sizeAxis0*sizeAxis1*k*incY+offsetY > bufferY->size) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "BufferY size is too small", 0);
         return;
@@ -119,7 +119,7 @@ static PHP_METHOD(Math, slice)
             zend_long py;
             pa = (i+startAxis0)*n*k*incA+(j+startAxis1)*k*incA+offsetA;
             py = i*sizeAxis1*k+j*k*incY+offsetY;
-            if(bufferA->dtype==php_rindow_openblas_dtype_float32){
+            if(bufferA->dtype==php_interop_polite_math_matrix_dtype_float32){
                 float *a = &(((float *)bufferA->data)[pa]);
                 float *y = &(((float *)bufferY->data)[py]);
                 if(!reverse) {
@@ -145,7 +145,7 @@ static PHP_METHOD(Math, slice)
                             a, (blasint)incA);
                     }
                 }
-            } else if(bufferA->dtype==php_rindow_openblas_dtype_float64){
+            } else if(bufferA->dtype==php_interop_polite_math_matrix_dtype_float64){
                 double *a = &(((double *)bufferA->data)[pa]);
                 double *y = &(((double *)bufferY->data)[py]);
                 if(!reverse) {
@@ -174,7 +174,7 @@ static PHP_METHOD(Math, slice)
             } else {
                 uint8_t *a, *y;
                 int rc;
-                int valueSize = php_rindow_openblas_dtype_to_valuesize(bufferA->dtype);
+                int valueSize = php_rindow_openblas_common_dtype_to_valuesize(bufferA->dtype);
                 a = php_rindow_openblas_get_address(bufferA,pa,valueSize);
                 y = php_rindow_openblas_get_address(bufferY,py,valueSize);
                 if(!reverse) {

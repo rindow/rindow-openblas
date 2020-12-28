@@ -4,7 +4,7 @@
 #include <ext/spl/spl_iterators.h>
 #include <ext/spl/spl_exceptions.h>
 #include <stdint.h>
-#include <Rindow/OpenBLAS/Buffer.h>
+#include <Interop/Polite/Math/Matrix.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -18,7 +18,7 @@ static zend_object_handlers rindow_openblas_buffer_object_handlers;
 // destractor
 static void php_rindow_openblas_buffer_free_object(zend_object* object)
 {
-    php_rindow_openblas_buffer_t* obj = php_rindow_openblas_buffer_fetch_object(object);
+    php_interop_polite_math_matrix_linear_buffer_t* obj = php_interop_polite_math_matrix_linear_buffer_fetch_object(object);
     if (obj->data) {
         efree(obj->data);
     }
@@ -28,9 +28,9 @@ static void php_rindow_openblas_buffer_free_object(zend_object* object)
 // constructor
 static zend_object* php_rindow_openblas_buffer_create_object(zend_class_entry* class_type) /* {{{ */
 {
-    php_rindow_openblas_buffer_t* intern = NULL;
+    php_interop_polite_math_matrix_linear_buffer_t* intern = NULL;
 
-    intern = (php_rindow_openblas_buffer_t*)ecalloc(1, sizeof(php_rindow_openblas_buffer_t) + zend_object_properties_size(class_type));
+    intern = (php_interop_polite_math_matrix_linear_buffer_t*)ecalloc(1, sizeof(php_interop_polite_math_matrix_linear_buffer_t) + zend_object_properties_size(class_type));
 
     zend_object_std_init(&intern->std, class_type);
     object_properties_init(&intern->std, class_type);
@@ -41,48 +41,48 @@ static zend_object* php_rindow_openblas_buffer_create_object(zend_class_entry* c
 } /* }}} */
 
 static void php_rindow_openblas_buffer_do_set(
-    php_rindow_openblas_buffer_t* intern,
+    php_interop_polite_math_matrix_linear_buffer_t* intern,
     zend_long offset,
     zend_long intvalue,
     double floatvalue)
 {
     switch(intern->dtype) {
-        case php_rindow_openblas_dtype_bool:
-        case php_rindow_openblas_dtype_int8:
-        case php_rindow_openblas_dtype_uint8:
+        case php_interop_polite_math_matrix_dtype_bool:
+        case php_interop_polite_math_matrix_dtype_int8:
+        case php_interop_polite_math_matrix_dtype_uint8:
             {
                 uint8_t* bufint8=(uint8_t*)intern->data;
                 bufint8[offset]=(uint8_t)(intvalue & 0xff);
             }
             break;
-        case php_rindow_openblas_dtype_int16:
-        case php_rindow_openblas_dtype_uint16:
+        case php_interop_polite_math_matrix_dtype_int16:
+        case php_interop_polite_math_matrix_dtype_uint16:
             {
                 int16_t* bufint16=(int16_t*)intern->data;
                 bufint16[offset]=(int16_t)(intvalue & 0xffff);
             }
             break;
-        case php_rindow_openblas_dtype_int32:
-        case php_rindow_openblas_dtype_uint32:
+        case php_interop_polite_math_matrix_dtype_int32:
+        case php_interop_polite_math_matrix_dtype_uint32:
             {
                 int32_t* bufint32=(int32_t*)intern->data;
                 bufint32[offset]=(int32_t)(intvalue);
             }
             break;
-        case php_rindow_openblas_dtype_int64:
-        case php_rindow_openblas_dtype_uint64:
+        case php_interop_polite_math_matrix_dtype_int64:
+        case php_interop_polite_math_matrix_dtype_uint64:
             {
                 int64_t* bufint64=(int64_t*)intern->data;
                 bufint64[offset]=(int64_t)(intvalue);
             }
             break;
-        case php_rindow_openblas_dtype_float32:
+        case php_interop_polite_math_matrix_dtype_float32:
             {
                 float* buffloat32=(float*)intern->data;
                 buffloat32[offset]=(float)floatvalue;
             }
             break;
-        case php_rindow_openblas_dtype_float64:
+        case php_interop_polite_math_matrix_dtype_float64:
             {
                 double* buffloat64=(double*)intern->data;
                 buffloat64[offset]=(double)floatvalue;
@@ -96,39 +96,34 @@ static void php_rindow_openblas_buffer_do_set(
 /* Method Rindow\OpenBLAS\Buffer::__construct($size,$dtype) {{{ */
 static PHP_METHOD(Buffer, __construct)
 {
-    php_rindow_openblas_buffer_t* intern;
+    php_interop_polite_math_matrix_linear_buffer_t* intern;
     zend_long size = 0;
     zend_long dtype = 0;
 
-    //if (zend_parse_parameters(ZEND_NUM_ARGS(), "ll",
-    //        &size, &dtype) == FAILURE) {
-    //    zend_throw_exception(spl_ce_InvalidArgumentException, "The size and the dtype are required", 0);
-    //    return;
-    //}
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 2, 2)
         Z_PARAM_LONG(size)
         Z_PARAM_LONG(dtype)
     ZEND_PARSE_PARAMETERS_END();
 
     switch(dtype) {
-        case php_rindow_openblas_dtype_bool:
-        case php_rindow_openblas_dtype_int8:
-        case php_rindow_openblas_dtype_uint8:
-        case php_rindow_openblas_dtype_int16:
-        case php_rindow_openblas_dtype_uint16:
-        case php_rindow_openblas_dtype_int32:
-        case php_rindow_openblas_dtype_uint32:
-        case php_rindow_openblas_dtype_int64:
-        case php_rindow_openblas_dtype_uint64:
-        case php_rindow_openblas_dtype_float32:
-        case php_rindow_openblas_dtype_float64:
+        case php_interop_polite_math_matrix_dtype_bool:
+        case php_interop_polite_math_matrix_dtype_int8:
+        case php_interop_polite_math_matrix_dtype_uint8:
+        case php_interop_polite_math_matrix_dtype_int16:
+        case php_interop_polite_math_matrix_dtype_uint16:
+        case php_interop_polite_math_matrix_dtype_int32:
+        case php_interop_polite_math_matrix_dtype_uint32:
+        case php_interop_polite_math_matrix_dtype_int64:
+        case php_interop_polite_math_matrix_dtype_uint64:
+        case php_interop_polite_math_matrix_dtype_float32:
+        case php_interop_polite_math_matrix_dtype_float64:
             break;
         default:
             zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
 
-    intern = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(getThis());
+    intern = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(getThis());
     if(size<=0 || dtype<=0) {
         intern->size = 0;
         intern->dtype = 0;
@@ -138,7 +133,7 @@ static PHP_METHOD(Buffer, __construct)
     }
     intern->size = size;
     intern->dtype = dtype;
-    intern->value_size = php_rindow_openblas_dtype_to_valuesize(dtype);
+    intern->value_size = php_rindow_openblas_common_dtype_to_valuesize(dtype);
     if(intern->value_size==0) {
         intern->data = NULL;
         return;
@@ -150,19 +145,14 @@ static PHP_METHOD(Buffer, __construct)
 /* Method Rindow\OpenBLAS\Buffer::offsetExists($offset) {{{ */
 static PHP_METHOD(Buffer, offsetExists)
 {
-    php_rindow_openblas_buffer_t* intern;
+    php_interop_polite_math_matrix_linear_buffer_t* intern;
     zend_long offset;
 
-    //if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
-    //        &offset) == FAILURE) {
-    //    zend_throw_exception(spl_ce_InvalidArgumentException, "1 parameter must be integer", 0);
-    //    return;
-    //}
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 1, 1)
         Z_PARAM_LONG(offset)
     ZEND_PARSE_PARAMETERS_END();
 
-    intern = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(getThis());
+    intern = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(getThis());
     if(intern->data==NULL) {
         zend_throw_exception(spl_ce_DomainException, "uninitialized array", 0);
         return;
@@ -177,22 +167,17 @@ static PHP_METHOD(Buffer, offsetExists)
 /* Method Rindow\OpenBLAS\Buffer::offsetGet($offset) {{{ */
 static PHP_METHOD(Buffer, offsetGet)
 {
-    php_rindow_openblas_buffer_t* intern;
+    php_interop_polite_math_matrix_linear_buffer_t* intern;
     zend_long offset;
     zend_long intvalue;
     double floatvalue;
     zend_bool boolvalue;
 
-    //if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
-    //        &offset) == FAILURE) {
-    //    zend_throw_exception(spl_ce_InvalidArgumentException, "1 parameter must be integer", 0);
-    //    return;
-    //}
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 1, 1)
         Z_PARAM_LONG(offset)
     ZEND_PARSE_PARAMETERS_END();
 
-    intern = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(getThis());
+    intern = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(getThis());
     if(intern->data==NULL) {
         zend_throw_exception(spl_ce_DomainException, "uninitialized array", 0);
         return;
@@ -202,67 +187,67 @@ static PHP_METHOD(Buffer, offsetGet)
         return;
     }
     switch(intern->dtype) {
-        case php_rindow_openblas_dtype_bool:
+        case php_interop_polite_math_matrix_dtype_bool:
             {
                 uint8_t* bufbool=(uint8_t*)intern->data;
                 boolvalue =(zend_bool)bufbool[offset];
             }
             RETURN_BOOL(boolvalue);
-        case php_rindow_openblas_dtype_int8:
+        case php_interop_polite_math_matrix_dtype_int8:
             {
                 int8_t* bufint8=(int8_t*)intern->data;
                 intvalue =(zend_long)bufint8[offset];
             }
             RETURN_LONG(intvalue);
-        case php_rindow_openblas_dtype_uint8:
+        case php_interop_polite_math_matrix_dtype_uint8:
             {
                 uint8_t* bufuint8=(uint8_t*)intern->data;
                 intvalue =(zend_long)bufuint8[offset];
             }
             RETURN_LONG(intvalue);
-        case php_rindow_openblas_dtype_int16:
+        case php_interop_polite_math_matrix_dtype_int16:
             {
                 int16_t* bufint16=(int16_t*)intern->data;
                 intvalue = (zend_long)bufint16[offset];
             }
             RETURN_LONG(intvalue);
-        case php_rindow_openblas_dtype_uint16:
+        case php_interop_polite_math_matrix_dtype_uint16:
             {
                 uint16_t* bufuint16=(uint16_t*)intern->data;
                 intvalue = (zend_long)bufuint16[offset];
             }
             RETURN_LONG(intvalue);
-        case php_rindow_openblas_dtype_int32:
+        case php_interop_polite_math_matrix_dtype_int32:
             {
                 int32_t* bufint32=(int32_t*)intern->data;
                 intvalue = (zend_long)bufint32[offset];
             }
             RETURN_LONG(intvalue);
-        case php_rindow_openblas_dtype_uint32:
+        case php_interop_polite_math_matrix_dtype_uint32:
             {
                 uint32_t* bufuint32=(uint32_t*)intern->data;
                 intvalue = (zend_long)bufuint32[offset];
             }
             RETURN_LONG(intvalue);
-        case php_rindow_openblas_dtype_int64:
+        case php_interop_polite_math_matrix_dtype_int64:
             {
                 int64_t* bufint64=(int64_t*)intern->data;
                 intvalue = (zend_long)bufint64[offset];
             }
             RETURN_LONG(intvalue);
-        case php_rindow_openblas_dtype_uint64:
+        case php_interop_polite_math_matrix_dtype_uint64:
             {
                 uint64_t* bufuint64=(uint64_t*)intern->data;
                 intvalue = (zend_long)bufuint64[offset];
             }
             RETURN_LONG(intvalue);
-        case php_rindow_openblas_dtype_float32:
+        case php_interop_polite_math_matrix_dtype_float32:
             {
                 float* buffloat32=(float*)intern->data;
                 floatvalue = (double)buffloat32[offset];
             }
             RETURN_DOUBLE(floatvalue);
-        case php_rindow_openblas_dtype_float64:
+        case php_interop_polite_math_matrix_dtype_float64:
             {
                 double* buffloat64=(double*)intern->data;
                 floatvalue = (double)buffloat64[offset];
@@ -277,45 +262,30 @@ static PHP_METHOD(Buffer, offsetGet)
 /* Method Rindow\OpenBLAS\Buffer::offsetSet($offset,$value) {{{ */
 static PHP_METHOD(Buffer, offsetSet)
 {
-    php_rindow_openblas_buffer_t* intern;
+    php_interop_polite_math_matrix_linear_buffer_t* intern;
     zend_long offset;
     zend_long intvalue;
     double floatvalue;
     zend_bool boolvalue;
 
-    intern = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(getThis());
+    intern = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(getThis());
     if(intern->data==NULL) {
         zend_throw_exception(spl_ce_DomainException, "uninitialized array", 0);
         return;
     }
-    if(php_rindow_openblas_dtype_is_int(intern->dtype)) {
-        //if (zend_parse_parameters(ZEND_NUM_ARGS(), "ll",
-        //        &offset,&intvalue) == FAILURE) {
-        //    zend_throw_exception(spl_ce_InvalidArgumentException, "The offset and the value are required", 0);
-        //    return;
-        //}
+    if(php_rindow_openblas_common_dtype_is_int(intern->dtype)) {
         ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 2, 2)
             Z_PARAM_LONG(offset)
             Z_PARAM_LONG(intvalue)
         ZEND_PARSE_PARAMETERS_END();
 
-    } else if(php_rindow_openblas_dtype_is_float(intern->dtype)) {
-        //if (zend_parse_parameters(ZEND_NUM_ARGS(), "ld",
-        //        &offset,&floatvalue) == FAILURE) {
-        //    zend_throw_exception(spl_ce_InvalidArgumentException, "The offset and the value are required", 0);
-        //    return;
-        //}
+    } else if(php_rindow_openblas_common_dtype_is_float(intern->dtype)) {
         ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 2, 2)
             Z_PARAM_LONG(offset)
             Z_PARAM_DOUBLE(floatvalue)
         ZEND_PARSE_PARAMETERS_END();
 
-    } else if(php_rindow_openblas_dtype_is_bool(intern->dtype)) {
-        //if (zend_parse_parameters(ZEND_NUM_ARGS(), "lb",
-        //        &offset,&boolvalue) == FAILURE) {
-        //    zend_throw_exception(spl_ce_InvalidArgumentException, "The offset and the value are required", 0);
-        //    return;
-        //}
+    } else if(php_rindow_openblas_common_dtype_is_bool(intern->dtype)) {
         ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 2, 2)
             Z_PARAM_LONG(offset)
             Z_PARAM_BOOL(boolvalue)
@@ -343,19 +313,14 @@ static PHP_METHOD(Buffer, offsetSet)
 /* Method Rindow\OpenBLAS\Buffer::offsetUnset($offset) {{{ */
 static PHP_METHOD(Buffer, offsetUnset)
 {
-    php_rindow_openblas_buffer_t* intern;
+    php_interop_polite_math_matrix_linear_buffer_t* intern;
     zend_long offset;
 
-    intern = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(getThis());
+    intern = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(getThis());
     if(intern->data==NULL) {
         zend_throw_exception(spl_ce_DomainException, "uninitialized array", 0);
         return;
     }
-    //if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
-    //        &offset) == FAILURE) {
-    //    zend_throw_exception(spl_ce_InvalidArgumentException, "1 parameter must be integer", 0);
-    //    return;
-    //}
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 1, 1)
         Z_PARAM_LONG(offset)
     ZEND_PARSE_PARAMETERS_END();
@@ -370,9 +335,9 @@ static PHP_METHOD(Buffer, offsetUnset)
 /* Method Rindow\OpenBLAS\Buffer::count() {{{ */
 static PHP_METHOD(Buffer, count)
 {
-    php_rindow_openblas_buffer_t* intern;
+    php_interop_polite_math_matrix_linear_buffer_t* intern;
 
-    intern = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(getThis());
+    intern = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(getThis());
     if(intern->data==NULL) {
         zend_throw_exception(spl_ce_DomainException, "uninitialized array", 0);
         return;
@@ -384,9 +349,9 @@ static PHP_METHOD(Buffer, count)
 /* Method Rindow\OpenBLAS\Buffer::dtype() {{{ */
 static PHP_METHOD(Buffer, dtype)
 {
-    php_rindow_openblas_buffer_t* intern;
+    php_interop_polite_math_matrix_linear_buffer_t* intern;
 
-    intern = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(getThis());
+    intern = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(getThis());
     if(intern->data==NULL) {
         zend_throw_exception(spl_ce_DomainException, "uninitialized array", 0);
         return;
@@ -398,9 +363,9 @@ static PHP_METHOD(Buffer, dtype)
 /* Method Rindow\OpenBLAS\Buffer::value_size() {{{ */
 static PHP_METHOD(Buffer, value_size)
 {
-    php_rindow_openblas_buffer_t* intern;
+    php_interop_polite_math_matrix_linear_buffer_t* intern;
 
-    intern = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(getThis());
+    intern = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(getThis());
     if(intern->data==NULL) {
         zend_throw_exception(spl_ce_DomainException, "uninitialized array", 0);
         return;
@@ -412,16 +377,16 @@ static PHP_METHOD(Buffer, value_size)
 /* Method Rindow\OpenBLAS\Buffer::dump() : string {{{ */
 static PHP_METHOD(Buffer, dump)
 {
-    php_rindow_openblas_buffer_t* intern;
+    php_interop_polite_math_matrix_linear_buffer_t* intern;
     size_t len=0;
 
-    intern = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(getThis());
+    intern = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(getThis());
     if(intern->data==NULL) {
         zend_throw_exception(spl_ce_DomainException, "uninitialized array", 0);
         return;
     }
 
-    len = intern->size * php_rindow_openblas_dtype_to_valuesize(intern->dtype);
+    len = intern->size * php_rindow_openblas_common_dtype_to_valuesize(intern->dtype);
     RETURN_STRINGL(intern->data,len);
 }
 /* }}} */
@@ -429,25 +394,20 @@ static PHP_METHOD(Buffer, dump)
 /* Method Rindow\OpenBLAS\Buffer::load(string $data) {{{ */
 static PHP_METHOD(Buffer, load)
 {
-    php_rindow_openblas_buffer_t* intern;
+    php_interop_polite_math_matrix_linear_buffer_t* intern;
     size_t len=0;
     char* str=NULL;
 
-    intern = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(getThis());
+    intern = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(getThis());
     if(intern->data==NULL) {
         zend_throw_exception(spl_ce_DomainException, "uninitialized array", 0);
         return;
     }
-    //if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
-    //        &str,&len) == FAILURE) {
-    //    zend_throw_exception(spl_ce_InvalidArgumentException, "1 parameter must be string", 0);
-    //    return;
-    //}
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 1, 1)
         Z_PARAM_STRING(str,len)
     ZEND_PARSE_PARAMETERS_END();
 
-    if(len != intern->size * php_rindow_openblas_dtype_to_valuesize(intern->dtype)) {
+    if(len != intern->size * php_rindow_openblas_common_dtype_to_valuesize(intern->dtype)) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "unmatch data size", 0);
         return;
     }
@@ -514,7 +474,7 @@ void php_rindow_openblas_buffer_init_ce(INIT_FUNC_ARGS)
     php_rindow_openblas_buffer_ce->create_object = php_rindow_openblas_buffer_create_object;
 
     memcpy(&rindow_openblas_buffer_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
-    rindow_openblas_buffer_object_handlers.offset    = XtOffsetOf(php_rindow_openblas_buffer_t, std);
+    rindow_openblas_buffer_object_handlers.offset    = XtOffsetOf(php_interop_polite_math_matrix_linear_buffer_t, std);
     rindow_openblas_buffer_object_handlers.free_obj  = php_rindow_openblas_buffer_free_object;
     rindow_openblas_buffer_object_handlers.clone_obj = NULL;
 

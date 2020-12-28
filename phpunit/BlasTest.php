@@ -334,7 +334,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $blas->scal($N,$alpha,$XX,$offX,$incX);
     }
 
@@ -457,7 +457,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $blas->axpy($N,$alpha,$XX,$offX,$incX,$YY,$offY,$incY);
     }
 
@@ -553,7 +553,7 @@ class Test extends TestCase
 
         $YY = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $blas->axpy($N,$alpha,$XX,$offX,$incX,$YY,$offY,$incY);
     }
 
@@ -679,7 +679,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $dot = $blas->dot($N,$XX,$offX,$incX,$YY,$offY,$incY);
     }
 
@@ -775,7 +775,7 @@ class Test extends TestCase
 
         $YY = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $dot = $blas->dot($N,$XX,$offX,$incX,$YY,$offY,$incY);
     }
 
@@ -896,7 +896,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $min = $blas->asum($N,$XX,$offX,$incX);
     }
 
@@ -1014,7 +1014,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $min = $blas->iamax($N,$XX,$offX,$incX);
     }
 
@@ -1137,7 +1137,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $min = $blas->iamin($N,$XX,$offX,$incX);
     }
 
@@ -1263,7 +1263,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $blas->copy($N,$XX,$offX,$incX,$YY,$offY,$incY);
     }
 
@@ -1311,7 +1311,7 @@ class Test extends TestCase
 
         $YY = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $blas->copy($N,$XX,$offX,$incX,$YY,$offY,$incY);
     }
 
@@ -1584,7 +1584,7 @@ class Test extends TestCase
 
         $AA = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $blas->gemv(
             BLAS::RowMajor,$trans,
             $m,$n,
@@ -1662,7 +1662,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $blas->gemv(
             BLAS::RowMajor,$trans,
             $m,$n,
@@ -1740,7 +1740,7 @@ class Test extends TestCase
 
         $YY = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $blas->gemv(
             BLAS::RowMajor,$trans,
             $m,$n,
@@ -2214,7 +2214,7 @@ class Test extends TestCase
 
         $AA = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $blas->gemm(
             BLAS::RowMajor,$transA,$transB,
             $M,$N,$K,
@@ -2301,7 +2301,7 @@ class Test extends TestCase
 
         $BB = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $blas->gemm(
             BLAS::RowMajor,$transA,$transB,
             $M,$N,$K,
@@ -2388,7 +2388,7 @@ class Test extends TestCase
 
         $CC = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $blas->gemm(
             BLAS::RowMajor,$transA,$transB,
             $M,$N,$K,

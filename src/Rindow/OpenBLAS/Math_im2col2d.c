@@ -1,6 +1,6 @@
 static inline int im2col2d_copyCell(
     zend_bool reverse,
-    php_rindow_openblas_buffer_t *images,
+    php_interop_polite_math_matrix_linear_buffer_t *images,
     zend_long images_pos,
     zend_long im_h,
     zend_long im_w,
@@ -14,7 +14,7 @@ static inline int im2col2d_copyCell(
     zend_long vfilter_w,
     zend_long dilation_h,
     zend_long dilation_w,
-    php_rindow_openblas_buffer_t *out,
+    php_interop_polite_math_matrix_linear_buffer_t *out,
     zend_long out_pos,
     zend_long out_filter_step,
     zend_long out_channel_step
@@ -48,7 +48,7 @@ static inline int im2col2d_copyCell(
                         return -1;
                     }
                     if(!reverse) {
-                        if(images->dtype == php_rindow_openblas_dtype_float32) {
+                        if(images->dtype == php_interop_polite_math_matrix_dtype_float32) {
                             ((float*)(out->data))[out_channel_pos]
                                 = 0;
                         } else {
@@ -66,7 +66,7 @@ static inline int im2col2d_copyCell(
                         return -1;
                     }
                     if(!reverse) {
-                        if(images->dtype== php_rindow_openblas_dtype_float32) {
+                        if(images->dtype== php_interop_polite_math_matrix_dtype_float32) {
                             ((float*)(out->data))[out_channel_pos]
                                 = ((float*)(images->data))[channel_pos];
                         } else {
@@ -75,7 +75,7 @@ static inline int im2col2d_copyCell(
                         }
                     } else {
                         // Sum for Back propagation
-                        if(images->dtype== php_rindow_openblas_dtype_float32) {
+                        if(images->dtype== php_interop_polite_math_matrix_dtype_float32) {
                             ((float*)(images->data))[channel_pos]
                                 += ((float*)(out->data))[out_channel_pos];
                         } else {
@@ -98,7 +98,7 @@ static inline int im2col2d_copyCell(
 
 static inline int im2col2d_execute(
     zend_bool reverse,
-    php_rindow_openblas_buffer_t* images,
+    php_interop_polite_math_matrix_linear_buffer_t* images,
     zend_long images_offset,
     zend_long images_size,
     zend_long batches,
@@ -117,7 +117,7 @@ static inline int im2col2d_execute(
 
     zend_long dilation_w,
     zend_bool cols_channels_first,
-    php_rindow_openblas_buffer_t* cols,
+    php_interop_polite_math_matrix_linear_buffer_t* cols,
     zend_long cols_offset,
     zend_long cols_size
     )
@@ -291,7 +291,7 @@ static inline int im2col2d_execute(
 static PHP_METHOD(Math, im2col2d)
 {
     zend_bool reverse;
-    php_rindow_openblas_buffer_t* images;
+    php_interop_polite_math_matrix_linear_buffer_t* images;
     zend_long images_offset;
     zend_long images_size;
     zend_long batches;
@@ -307,7 +307,7 @@ static PHP_METHOD(Math, im2col2d)
     zend_long dilation_h;
     zend_long dilation_w;
     zend_bool cols_channels_first;
-    php_rindow_openblas_buffer_t* cols;
+    php_interop_polite_math_matrix_linear_buffer_t* cols;
     zend_long cols_offset;
     zend_long cols_size;
 
@@ -316,7 +316,7 @@ static PHP_METHOD(Math, im2col2d)
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 20, 20)
         Z_PARAM_BOOL(reverse)
-        Z_PARAM_OBJECT_OF_CLASS(images_obj,php_rindow_openblas_buffer_ce)
+        Z_PARAM_ZVAL(images_obj) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(images_offset)
         Z_PARAM_LONG(images_size)
         Z_PARAM_LONG(batches)
@@ -335,25 +335,25 @@ static PHP_METHOD(Math, im2col2d)
 
         Z_PARAM_LONG(dilation_w)
         Z_PARAM_BOOL(cols_channels_first)
-        Z_PARAM_OBJECT_OF_CLASS(cols_obj,php_rindow_openblas_buffer_ce)
+        Z_PARAM_ZVAL(cols_obj) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(cols_offset)
         Z_PARAM_LONG(cols_size)
     ZEND_PARSE_PARAMETERS_END();
 
-    images = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(images_obj);
+    images = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(images_obj);
     if(php_rindow_openblas_assert_buffer_size(
         images, images_offset, images_size,
         "Invalid images buffer offset or size")) {
         return;
     }
-    cols = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(cols_obj);
+    cols = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(cols_obj);
     if(php_rindow_openblas_assert_buffer_size(
         cols, cols_offset, cols_size,
         "Invalid cols buffer offset or size")) {
         return;
     }
-    if(images->dtype!=php_rindow_openblas_dtype_float32 &&
-        images->dtype!=php_rindow_openblas_dtype_float64) {
+    if(images->dtype!=php_interop_polite_math_matrix_dtype_float32 &&
+        images->dtype!=php_interop_polite_math_matrix_dtype_float64) {
         zend_throw_exception(spl_ce_InvalidArgumentException,
             "Unsupported data type", 0);
         return;

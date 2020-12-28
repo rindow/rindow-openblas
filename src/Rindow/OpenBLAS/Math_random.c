@@ -47,7 +47,7 @@ static inline double php_rindow_rand_normal_double(
 
 static PHP_METHOD(Math, randomUniform)
 {
-    php_rindow_openblas_buffer_t* bufferX;
+    php_interop_polite_math_matrix_linear_buffer_t* bufferX;
     zend_long n;
     zval* x=NULL;
     zend_long offsetX;
@@ -62,7 +62,7 @@ static PHP_METHOD(Math, randomUniform)
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 7, 7)
         Z_PARAM_LONG(n)
-        Z_PARAM_OBJECT_OF_CLASS(x,php_rindow_openblas_buffer_ce)
+        Z_PARAM_ZVAL(x) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetX)
         Z_PARAM_LONG(incX)
         Z_PARAM_ZVAL(low_val)
@@ -71,20 +71,20 @@ static PHP_METHOD(Math, randomUniform)
     ZEND_PARSE_PARAMETERS_END();
 
     // Check Buffer X
-    bufferX = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(x);
+    bufferX = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(x);
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, bufferX,n,offsetX,incX)) {
         return;
     }
 
-    if(php_rindow_openblas_dtype_is_float(bufferX->dtype)) {
+    if(php_rindow_openblas_common_dtype_is_float(bufferX->dtype)) {
         if(php_rindow_openblas_val2float(low_val,&low_float,"low must be float or int")) {
             return;
         }
         if(php_rindow_openblas_val2float(high_val,&high_float,"high must be float or int")) {
             return;
         }
-    } else if(php_rindow_openblas_dtype_is_int(bufferX->dtype)) {
+    } else if(php_rindow_openblas_common_dtype_is_int(bufferX->dtype)) {
         if(php_rindow_openblas_val2int(low_val,&low_int,"low must be float or int")) {
             return;
         }
@@ -101,7 +101,7 @@ static PHP_METHOD(Math, randomUniform)
 
     switch(bufferX->dtype) {
 
-        case php_rindow_openblas_dtype_float32:
+        case php_interop_polite_math_matrix_dtype_float32:
             {
                 float *x = &(((float *)bufferX->data)[offsetX]);
                 zend_long i;
@@ -110,7 +110,7 @@ static PHP_METHOD(Math, randomUniform)
                 }
             }
             break;
-        case php_rindow_openblas_dtype_float64:
+        case php_interop_polite_math_matrix_dtype_float64:
             {
                 double *x = &(((double *)bufferX->data)[offsetX]);
                 zend_long i;
@@ -150,7 +150,7 @@ static PHP_METHOD(Math, randomUniform)
 
 static PHP_METHOD(Math, randomNormal)
 {
-    php_rindow_openblas_buffer_t* bufferX;
+    php_interop_polite_math_matrix_linear_buffer_t* bufferX;
     zend_long n;
     zval* x=NULL;
     zend_long offsetX;
@@ -163,7 +163,7 @@ static PHP_METHOD(Math, randomNormal)
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 7, 7)
         Z_PARAM_LONG(n)
-        Z_PARAM_OBJECT_OF_CLASS(x,php_rindow_openblas_buffer_ce)
+        Z_PARAM_ZVAL(x) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetX)
         Z_PARAM_LONG(incX)
         Z_PARAM_DOUBLE(mean)
@@ -172,7 +172,7 @@ static PHP_METHOD(Math, randomNormal)
     ZEND_PARSE_PARAMETERS_END();
 
     // Check Buffer X
-    bufferX = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(x);
+    bufferX = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(x);
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, bufferX,n,offsetX,incX)) {
         return;
@@ -183,7 +183,7 @@ static PHP_METHOD(Math, randomNormal)
 
     switch(bufferX->dtype) {
 
-        case php_rindow_openblas_dtype_float32:
+        case php_interop_polite_math_matrix_dtype_float32:
             {
                 float *x = &(((float *)bufferX->data)[offsetX]);
                 zend_long i;
@@ -192,7 +192,7 @@ static PHP_METHOD(Math, randomNormal)
                 }
             }
             break;
-        case php_rindow_openblas_dtype_float64:
+        case php_interop_polite_math_matrix_dtype_float64:
             {
                 double *x = &(((double *)bufferX->data)[offsetX]);
                 zend_long i;
@@ -221,7 +221,7 @@ static PHP_METHOD(Math, randomNormal)
 
 static PHP_METHOD(Math, randomSequence)
 {
-    php_rindow_openblas_buffer_t* bufferX;
+    php_interop_polite_math_matrix_linear_buffer_t* bufferX;
     zend_long n;
     zend_long size;
     zval* x=NULL;
@@ -234,14 +234,14 @@ static PHP_METHOD(Math, randomSequence)
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 6, 6)
         Z_PARAM_LONG(n)
         Z_PARAM_LONG(size)
-        Z_PARAM_OBJECT_OF_CLASS(x,php_rindow_openblas_buffer_ce)
+        Z_PARAM_ZVAL(x) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetX)
         Z_PARAM_LONG(incX)
         Z_PARAM_LONG(seed)
     ZEND_PARSE_PARAMETERS_END();
 
     // Check Buffer X
-    bufferX = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(x);
+    bufferX = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(x);
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, bufferX,n,offsetX,incX)) {
         return;
@@ -250,7 +250,7 @@ static PHP_METHOD(Math, randomSequence)
         zend_throw_exception(spl_ce_InvalidArgumentException, "size must be smaller then n or equal.", 0);
         return;
     }
-    if(bufferX->dtype!=php_rindow_openblas_dtype_int64) {
+    if(bufferX->dtype!=php_interop_polite_math_matrix_dtype_int64) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "dtype must be int64.", 0);
         return;
     }

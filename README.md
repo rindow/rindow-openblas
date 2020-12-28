@@ -15,26 +15,34 @@ Requirements
 
 - PHP7.2 or PHP7.3 or PHP7.4
 - Linux or Windows 10
+- OpenBLAS
 
-Download binaries
-=================
-You can download and use pre-built Windows binaries.
-Download the binary for your version of PHP.
+How to download and setup pre-build binaries
+============================================
+You can download and use pre-built binaries for Windows and Ubuntu from each releases.
+Download the binary for your version of PHP in "Asset" link.
 
-- https://github.com/rindow/rindow-openblas-binaries/
+- https://github.com/rindow/rindow-openblas/releases
 
-Please download the following two binaries.
+For Windows, copy rindow_openblas.dll to your PHP extension directory and set extension=rindow_openblas in php.ini.
 
-- The PHP extension of rindow-openblas that matches the php version.
-- The flang runtime DLLs.
+If you are using Windows, you must download and setup OpenBLAS binary from OpenBLAS releases.
+Please Download the version of OpenBLAS binaries that correspond to the rindow_openblas binaries.
 
-If you are already using miniconda3, please use the flang runtime DLLs in it.
+- https://github.com/xianyi/OpenBLAS/releases
 
-How to setup
-============
-Copy the shared library to the PHP extension directory and set it in php.ini.
+Unzip it to a suitable location and set the execution path in the bin directory.
 
-And then Set the execution path to the unzipped flang runtime DLLs.
+```shell
+TMP>copy rindow_openblas.dll \path\to\php\ext
+TMP>set PATH=%PATH%;\path\to\OpenBLAS\bin
+```
+
+For Ubuntu, use the apt command to install the deb file.
+
+```shell
+$ sudo apt install ./rindow-openblas-php7.X_X.X.X-X+ubuntuXX.XX_amd64.deb
+```
 
 How to build from source code on Linux
 ======================================
@@ -60,6 +68,7 @@ Run the target php version of phpize and build.
 ```shell
 $ git clone https://github.com/rindow/rindow-openblas
 $ cd rindow_openblas
+$ composer update
 $ phpize7.4
 $ ./configure --enable-rindow_openblas --with-php-config=php-config7.4
 $ make clean
@@ -86,7 +95,9 @@ Build OpenBLAS for MSVC 15 on Windows
 
 ### Download binaries for the OpenBLAS libray
 You need to build OpenBLAS libray for MSVC or download built binaries of libray for MSVC.
-You can download the binaries from us.
+
+If you want to use the pre-built OpenBLAS libray, you need OpenBLAS release 0.3.10 or later.
+
 This binary can be used in pure msvc only environment unlike the binary on openblas site.
 
 - [Rindow OpenBLAS Development Kit for Windows](https://github.com/rindow/rindow-openblas-binaries/tree/master/devel/windows)
@@ -147,11 +158,12 @@ C:\php-sdk>phpsdk-vc15-x64.bat
 ### Build
 
 ```shell
-$ PATH %PATH%;/path/to/miniconda3-directory/bin
+$ PATH %PATH%;/path/to/OpenBLAS/bin
 ( It need the path of flang.dll. you can get it [here](https://github.com/rindow/rindow-openblas-binaries/tree/master/devel/windows))
 $ cd /path/to/here
+$ composer update
 $ /path/to/php-devel-pack-7.x.x-Win32-VC15-x64/phpize.bat
-$ configure --enable-rindow_openblas --with-prefix=/path/to/php-installation-path --with-openblas=/path/to/OpenBLAS-libray-built-directory --with-flang=/path/to/miniconda3-directory/Library
+$ configure --enable-rindow_openblas --with-prefix=/path/to/php-installation-path --with-openblas=/path/to/OpenBLAS-libray-built-directory
 $ nmake clean
 $ nmake
 $ nmake test

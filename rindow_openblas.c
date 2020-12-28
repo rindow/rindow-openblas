@@ -10,7 +10,7 @@
 #include <ext/spl/spl_iterators.h>
 #include <ext/spl/spl_exceptions.h>
 #include "ext/standard/info.h"
-#include <Rindow/OpenBLAS/Buffer.h>
+#include <Interop/Polite/Math/Matrix.h>
 #include "php_rindow_openblas.h"
 
 /* For compatibility with older PHP versions */
@@ -20,63 +20,63 @@
     ZEND_PARSE_PARAMETERS_END()
 #endif
 
-int php_rindow_openblas_dtype_to_valuesize(zend_long dtype)
+int php_rindow_openblas_common_dtype_to_valuesize(zend_long dtype)
 {
     switch (dtype) {
-        case php_rindow_openblas_dtype_bool:
-        case php_rindow_openblas_dtype_int8:
-        case php_rindow_openblas_dtype_uint8:
-        case php_rindow_openblas_dtype_float8:
+        case php_interop_polite_math_matrix_dtype_bool:
+        case php_interop_polite_math_matrix_dtype_int8:
+        case php_interop_polite_math_matrix_dtype_uint8:
+        case php_interop_polite_math_matrix_dtype_float8:
             return 1;
-        case php_rindow_openblas_dtype_int16:
-        case php_rindow_openblas_dtype_uint16:
-        case php_rindow_openblas_dtype_float16:
+        case php_interop_polite_math_matrix_dtype_int16:
+        case php_interop_polite_math_matrix_dtype_uint16:
+        case php_interop_polite_math_matrix_dtype_float16:
             return 2;
-        case php_rindow_openblas_dtype_int32:
-        case php_rindow_openblas_dtype_uint32:
-        case php_rindow_openblas_dtype_float32:
+        case php_interop_polite_math_matrix_dtype_int32:
+        case php_interop_polite_math_matrix_dtype_uint32:
+        case php_interop_polite_math_matrix_dtype_float32:
             return 4;
-        case php_rindow_openblas_dtype_int64:
-        case php_rindow_openblas_dtype_uint64:
-        case php_rindow_openblas_dtype_float64:
+        case php_interop_polite_math_matrix_dtype_int64:
+        case php_interop_polite_math_matrix_dtype_uint64:
+        case php_interop_polite_math_matrix_dtype_float64:
             return 8;
     }
     return 0;
 }
 
 
-int php_rindow_openblas_dtype_is_int(zend_long dtype)
+int php_rindow_openblas_common_dtype_is_int(zend_long dtype)
 {
     switch (dtype) {
-        case php_rindow_openblas_dtype_int8:
-        case php_rindow_openblas_dtype_uint8:
-        case php_rindow_openblas_dtype_int16:
-        case php_rindow_openblas_dtype_uint16:
-        case php_rindow_openblas_dtype_int32:
-        case php_rindow_openblas_dtype_uint32:
-        case php_rindow_openblas_dtype_int64:
-        case php_rindow_openblas_dtype_uint64:
+        case php_interop_polite_math_matrix_dtype_int8:
+        case php_interop_polite_math_matrix_dtype_uint8:
+        case php_interop_polite_math_matrix_dtype_int16:
+        case php_interop_polite_math_matrix_dtype_uint16:
+        case php_interop_polite_math_matrix_dtype_int32:
+        case php_interop_polite_math_matrix_dtype_uint32:
+        case php_interop_polite_math_matrix_dtype_int64:
+        case php_interop_polite_math_matrix_dtype_uint64:
             return 1;
     }
     return 0;
 }
 
-int php_rindow_openblas_dtype_is_float(zend_long dtype)
+int php_rindow_openblas_common_dtype_is_float(zend_long dtype)
 {
     switch (dtype) {
-        case php_rindow_openblas_dtype_float8:
-        case php_rindow_openblas_dtype_float16:
-        case php_rindow_openblas_dtype_float32:
-        case php_rindow_openblas_dtype_float64:
+        case php_interop_polite_math_matrix_dtype_float8:
+        case php_interop_polite_math_matrix_dtype_float16:
+        case php_interop_polite_math_matrix_dtype_float32:
+        case php_interop_polite_math_matrix_dtype_float64:
             return 1;
     }
     return 0;
 }
 
-int php_rindow_openblas_dtype_is_bool(zend_long dtype)
+int php_rindow_openblas_common_dtype_is_bool(zend_long dtype)
 {
     switch (dtype) {
-        case php_rindow_openblas_dtype_bool:
+        case php_interop_polite_math_matrix_dtype_bool:
             return 1;
     }
     return 0;
@@ -98,7 +98,7 @@ int php_rindow_openblas_assert_shape_parameter(
 }
 
 int php_rindow_openblas_assert_vector_buffer_spec(
-    int name,php_rindow_openblas_buffer_t *buffer,
+    int name,php_interop_polite_math_matrix_linear_buffer_t *buffer,
     zend_long n, zend_long offset, zend_long inc)
 {
     static const char *message[2][4] = {
@@ -136,7 +136,7 @@ int php_rindow_openblas_assert_vector_buffer_spec(
 }
 
 int php_rindow_openblas_assert_matrix_buffer_spec(
-    int name, php_rindow_openblas_buffer_t *buffer,
+    int name, php_interop_polite_math_matrix_linear_buffer_t *buffer,
     zend_long m,zend_long n, zend_long offset, zend_long ld)
 {
     static const char *message[4][4] = {
@@ -186,7 +186,7 @@ int php_rindow_openblas_assert_matrix_buffer_spec(
 }
 
 int php_rindow_openblas_assert_buffer_size(
-    php_rindow_openblas_buffer_t *buffer,
+    php_interop_polite_math_matrix_linear_buffer_t *buffer,
     zend_long offset,zend_long size,
     char* message)
 {

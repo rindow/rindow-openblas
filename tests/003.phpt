@@ -8,8 +8,12 @@ if (!extension_loaded('rindow_openblas')) {
 ?>
 --FILE--
 <?php
-define('float32',12);
-$buf = new Rindow\OpenBLAS\Buffer(4,float32);
+require __DIR__.'/../vendor/autoload.php';
+include __DIR__.'/../testPHP/HostBuffer.php';
+use Interop\Polite\Math\Matrix\NDArray;
+use Interop\Polite\Math\Matrix\BLAS;
+use RindowTest\OpenBlas\HostBuffer as Buffer;
+$buf = new Buffer(4,NDArray::float32);
 $buf[0] = 1;
 $buf[1] = 2;
 $buf[2] = 3;

@@ -1,5 +1,14 @@
+--TEST--
+Sample BLAS
+--SKIPIF--
 <?php
-require __DIR__.'/../phpunit/vendor/autoload.php';
+if (!extension_loaded('rindow_openblas')) {
+	echo 'skip';
+}
+?>
+--FILE--
+<?php
+require __DIR__.'/../vendor/autoload.php';
 if(!extension_loaded('rindow_openblas')) {
     echo "rindow_openblas extention is not loaded.\n";
     exit;
@@ -78,3 +87,74 @@ $blas->gemm(
     $C->buffer(),0,3);
 echo 'gemm=';
 var_dump($C->toArray());
+?>
+--EXPECT--
+float(10)
+float(20)
+array(2) {
+  [0]=>
+  float(2)
+  [1]=>
+  float(4)
+}
+array(2) {
+  [0]=>
+  float(54)
+  [1]=>
+  float(68)
+}
+float(133)
+float(21)
+int(5)
+int(0)
+array(6) {
+  [0]=>
+  float(-1)
+  [1]=>
+  float(2)
+  [2]=>
+  float(3)
+  [3]=>
+  float(4)
+  [4]=>
+  float(-5)
+  [5]=>
+  float(6)
+}
+gemv=array(3) {
+  [0]=>
+  float(20)
+  [1]=>
+  float(47)
+  [2]=>
+  float(74)
+}
+gemm=array(3) {
+  [0]=>
+  array(3) {
+    [0]=>
+    float(36)
+    [1]=>
+    float(42)
+    [2]=>
+    float(21)
+  }
+  [1]=>
+  array(3) {
+    [0]=>
+    float(81)
+    [1]=>
+    float(96)
+    [2]=>
+    float(57)
+  }
+  [2]=>
+  array(3) {
+    [0]=>
+    float(126)
+    [1]=>
+    float(150)
+    [2]=>
+    float(93)
+  }
+}

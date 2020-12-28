@@ -555,7 +555,7 @@ class Test extends TestCase
 
        $XX = new \stdClass();
        $this->expectException(TypeError::class);
-       $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+       $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
        $min = $math->sum($N,$XX,$offX,$incX);
    }
 
@@ -673,7 +673,7 @@ class Test extends TestCase
 
        $XX = new \stdClass();
        $this->expectException(TypeError::class);
-       $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+       $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
        $min = $math->imin($N,$XX,$offX,$incX);
    }
 
@@ -791,7 +791,7 @@ class Test extends TestCase
 
        $XX = new \stdClass();
        $this->expectException(TypeError::class);
-       $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+       $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
        $min = $math->imax($N,$XX,$offX,$incX);
    }
 
@@ -924,7 +924,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->increment($N,$alpha,$XX,$offX,$incX,$beta);
     }
 
@@ -1059,7 +1059,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->reciprocal($N,$alpha,$XX,$offX,$incX,$beta);
     }
 
@@ -1177,7 +1177,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->maximum($N,$alpha,$XX,$offX,$incX);
     }
 
@@ -1295,7 +1295,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->minimum($N,$alpha,$XX,$offX,$incX);
     }
 
@@ -1413,7 +1413,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->greater($N,$alpha,$XX,$offX,$incX);
     }
 
@@ -1531,7 +1531,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->less($N,$alpha,$XX,$offX,$incX);
     }
 
@@ -1714,7 +1714,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->multiply($trans,$M,$N,$XX,$offX,$incX,$AA,$offA,$ldA);
     }
 
@@ -1822,7 +1822,7 @@ class Test extends TestCase
 
         $AA = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->multiply($trans,$M,$N,$XX,$offX,$incX,$AA,$offA,$ldA);
     }
 
@@ -2014,7 +2014,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->add($trans,$M,$N,$alpha,$XX,$offX,$incX,$AA,$offA,$ldA);
     }
 
@@ -2122,7 +2122,7 @@ class Test extends TestCase
 
         $AA = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->add($trans,$M,$N,$alpha,$XX,$offX,$incX,$AA,$offA,$ldA);
     }
 
@@ -2314,7 +2314,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->duplicate($trans,$M,$N,$XX,$offX,$incX,$AA,$offA,$ldA);
     }
 
@@ -2422,7 +2422,7 @@ class Test extends TestCase
 
         $AA = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->duplicate($trans,$M,$N,$XX,$offX,$incX,$AA,$offA,$ldA);
     }
 
@@ -2549,7 +2549,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->square($N,$XX,$offX,$incX);
     }
 
@@ -2681,7 +2681,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->sqrt($N,$XX,$offX,$incX);
     }
 
@@ -2836,7 +2836,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->rsqrt($N,$alpha,$XX,$offX,$incX,$beta);
     }
 
@@ -2954,7 +2954,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->pow($N,$alpha,$XX,$offX,$incX);
     }
 
@@ -3074,7 +3074,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->exp($N,$XX,$offX,$incX);
     }
 
@@ -3208,7 +3208,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->log($N,$XX,$offX,$incX);
     }
 
@@ -3327,7 +3327,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->zeros($N,$XX,$offX,$incX);
     }
 
@@ -3569,7 +3569,7 @@ class Test extends TestCase
 
         $AA = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
     }
 
@@ -3671,7 +3671,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
     }
 
@@ -3773,7 +3773,7 @@ class Test extends TestCase
 
         $YY = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
     }
 
@@ -3957,7 +3957,7 @@ class Test extends TestCase
 
         $AA = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
     }
 
@@ -4059,7 +4059,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
     }
 
@@ -4161,7 +4161,7 @@ class Test extends TestCase
 
         $YY = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
     }
 
@@ -4223,7 +4223,7 @@ class Test extends TestCase
             $n = $Y->shape()[1];
         else
             $n = 1;
-            
+
         $k = $X->size();
         $AA = $A->buffer();
         $offA = $A->offset();
@@ -4242,7 +4242,7 @@ class Test extends TestCase
             $YY,$offY,$ldY
             ]);
     }
-    
+
     public function testScatterAxis0()
     {
         $mo = new MatrixOperator();
@@ -4260,8 +4260,8 @@ class Test extends TestCase
             $m,$n,$k,
             $AA,$offA,$ldA,
             $XX,$offX,$incX,
-            $YY,$offY,$ldY);
-            
+            $YY,$offY,$ldY,false);
+
         $this->assertEquals(
            [[1,2,3],
             [0,0,0],
@@ -4281,7 +4281,7 @@ class Test extends TestCase
             $m,$n,$k,
             $AA,$offA,$ldA,
             $XX,$offX,$incX,
-            $YY,$offY,$ldY);
+            $YY,$offY,$ldY,false);
         $this->assertEquals(
            [[1,2,3],
             [0,0,0],
@@ -4301,7 +4301,7 @@ class Test extends TestCase
             $m,$n,$k,
             $AA,$offA,$ldA,
             $XX,$offX,$incX,
-            $YY,$offY,$ldY);
+            $YY,$offY,$ldY,false);
         $this->assertEquals(
            [[1,2,3],
             [0,0,0],
@@ -4321,7 +4321,7 @@ class Test extends TestCase
             $m,$n,$k,
             $AA,$offA,$ldA,
             $XX,$offX,$incX,
-            $YY,$offY,$ldY);
+            $YY,$offY,$ldY,false);
         $this->assertEquals(
            [[1,2,3],
             [0,0,0],
@@ -4341,7 +4341,7 @@ class Test extends TestCase
             $m,$n,$k,
             $AA,$offA,$ldA,
             $XX,$offX,$incX,
-            $YY,$offY,$ldY);
+            $YY,$offY,$ldY,false);
         $this->assertEquals(
            [1,0,3,0],
             $A->toArray()
@@ -4358,7 +4358,7 @@ class Test extends TestCase
             $m,$n,$k,
             $AA,$offA,$ldA,
             $XX,$offX,$incX,
-            $YY,$offY,$ldY);
+            $YY,$offY,$ldY,false);
         $this->assertEquals(
            [1,0,3,0],
             $A->toArray()
@@ -4375,7 +4375,7 @@ class Test extends TestCase
             $m,$n,$k,
             $AA,$offA,$ldA,
             $XX,$offX,$incX,
-            $YY,$offY,$ldY);
+            $YY,$offY,$ldY,false);
         $this->assertEquals(
            [1,0,3,0],
             $A->toArray()
@@ -4392,7 +4392,7 @@ class Test extends TestCase
             $m,$n,$k,
             $AA,$offA,$ldA,
             $XX,$offX,$incX,
-            $YY,$offY,$ldY);
+            $YY,$offY,$ldY,false);
         $this->assertEquals(
            [1,0,3,0],
             $A->toArray()
@@ -4409,7 +4409,7 @@ class Test extends TestCase
             $m,$n,$k,
             $AA,$offA,$ldA,
             $XX,$offX,$incX,
-            $YY,$offY,$ldY);
+            $YY,$offY,$ldY,false);
         $this->assertEquals(
            [252,0,254,0],
             $A->toArray()
@@ -4426,7 +4426,7 @@ class Test extends TestCase
             $m,$n,$k,
             $AA,$offA,$ldA,
             $XX,$offX,$incX,
-            $YY,$offY,$ldY);
+            $YY,$offY,$ldY,false);
         $this->assertEquals(252,$A[0]);
         $this->assertEquals(254,$A[255]);
     }
@@ -4468,7 +4468,7 @@ class Test extends TestCase
             $m,$n,
             $AA,$offA,$ldA,
             $XX,$offX,$incX,
-            $YY,$offY,$incY);
+            $YY,$offY,$incY,false);
         $this->assertEquals(
            [[1,0,0],
             [0,5,0],
@@ -4486,7 +4486,7 @@ class Test extends TestCase
             $m,$n,
             $AA,$offA,$ldA,
             $XX,$offX,$incX,
-            $YY,$offY,$incY);
+            $YY,$offY,$incY,false);
         $this->assertEquals(
            [[1,0,0],
             [0,5,0],
@@ -4504,7 +4504,7 @@ class Test extends TestCase
             $m,$n,
             $AA,$offA,$ldA,
             $XX,$offX,$incX,
-            $YY,$offY,$incY);
+            $YY,$offY,$incY,false);
         $this->assertEquals(
            [[1,0,0],
             [0,5,0],
@@ -4522,7 +4522,7 @@ class Test extends TestCase
             $m,$n,
             $AA,$offA,$ldA,
             $XX,$offX,$incX,
-            $YY,$offY,$incY);
+            $YY,$offY,$incY,false);
         $this->assertEquals(
            [[1,0,0],
             [0,5,0],
@@ -4651,7 +4651,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->updateAddOnehot($m,$n,$a,$XX,$offX,$incX,$YY,$offY,$ldY);
     }
 
@@ -4747,7 +4747,7 @@ class Test extends TestCase
 
         $YY = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->updateAddOnehot($m,$n,$a,$XX,$offX,$incX,$YY,$offY,$ldY);
     }
 
@@ -4917,7 +4917,7 @@ class Test extends TestCase
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
@@ -5025,7 +5025,7 @@ class Test extends TestCase
 
         $AA = new \stdClass();
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('must be an instance of Rindow\OpenBLAS\Buffer');
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
         $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
@@ -5383,8 +5383,8 @@ class Test extends TestCase
         $math->reduceArgMax($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
         $this->assertEquals([2,2],$X->toArray());
     }
-    
-    
+
+
     public function testIm2col1dNormal()
     {
         if($this->checkSkip('im2col1d')){return;}
@@ -5413,6 +5413,7 @@ class Test extends TestCase
             $stride_w=1,
             $padding=false,
             $channels_first=false,
+            $dilation_w=1,
             $cols_channels_first=false,
             $cols_buff,
             $cols_offset,
@@ -5423,7 +5424,7 @@ class Test extends TestCase
               [[2],[3],[4]]]],
             $cols->toArray());
     }
-    
+
     public function testIm2col2dNormal()
     {
         if($this->checkSkip('im2col2d')){return;}
@@ -5486,6 +5487,8 @@ class Test extends TestCase
             $stride_w,
             $padding,
             $channels_first,
+            $dilation_h=1,
+            $dilation_w=1,
             $cols_channels_first,
             $cols_buff,
             $cols_offset,
@@ -5554,7 +5557,7 @@ class Test extends TestCase
             $im_w,
             $channels
         ]);
-        
+
         $cols = $mo->zeros(
             [
                 $batches,
@@ -5586,6 +5589,9 @@ class Test extends TestCase
             $stride_w,
             $padding,
             $channels_first,
+            $dilation_d=1,
+            $dilation_h=1,
+            $dilation_w=1,
             $cols_channels_first,
             $cols_buff,
             $cols_offset,
@@ -5596,5 +5602,5 @@ class Test extends TestCase
             $mo->zerosLike($cols)
             );
     }
-    
+
 }

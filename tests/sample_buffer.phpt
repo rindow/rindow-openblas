@@ -1,12 +1,24 @@
+--TEST--
+Blas
+--SKIPIF--
 <?php
-require __DIR__.'/../phpunit/vendor/autoload.php';
+if (!extension_loaded('rindow_openblas')) {
+	echo 'skip';
+}
+?>
+--FILE--
+<?php
 if(!extension_loaded('rindow_openblas')) {
     echo "rindow_openblas extention is not loaded.\n";
     exit;
 }
+require __DIR__.'/../vendor/autoload.php';
+include __DIR__.'/../testPHP/HostBuffer.php';
 use Interop\Polite\Math\Matrix\NDArray;
+use Interop\Polite\Math\Matrix\BLAS;
+use RindowTest\OpenBlas\HostBuffer as Buffer;
 
-$x = new Rindow\OpenBlas\Buffer(2,NDArray::float32);
+$x = new Buffer(2,NDArray::float32);
 
 $x[0] = 10;
 $x[1] = 20;
@@ -43,3 +55,7 @@ $y = new Rindow\OpenBlas\Buffer(2,NDArray::float32);
 $y->load($binary);
 assert($y[0]==10.0,'load binary');
 assert($y[1]==20.0,'load binary');
+echo "done"
+?>
+--EXPECT--
+done

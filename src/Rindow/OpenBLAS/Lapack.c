@@ -9,7 +9,7 @@
 #define lapack_complex_double _Dcomplex
 #endif
 #include <lapacke.h>
-#include <Rindow/OpenBLAS/Buffer.h>
+#include <Interop/Polite/Math/Matrix.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -70,11 +70,11 @@ lapack_int LAPACKE_dgesvd( int matrix_layout, char jobu, char jobvt,
                            lapack_int lda, double* s, double* u, lapack_int ldu,
                            double* vt, lapack_int ldvt, double* superb );
 */
-    php_rindow_openblas_buffer_t* bufferA;
-    php_rindow_openblas_buffer_t* bufferS;
-    php_rindow_openblas_buffer_t* bufferU;
-    php_rindow_openblas_buffer_t* bufferVT;
-    php_rindow_openblas_buffer_t* bufferSuperB;
+    php_interop_polite_math_matrix_linear_buffer_t* bufferA;
+    php_interop_polite_math_matrix_linear_buffer_t* bufferS;
+    php_interop_polite_math_matrix_linear_buffer_t* bufferU;
+    php_interop_polite_math_matrix_linear_buffer_t* bufferVT;
+    php_interop_polite_math_matrix_linear_buffer_t* bufferSuperB;
     zend_long matrix_layout;
     zend_long jobu;
     zend_long jobvt;
@@ -102,20 +102,20 @@ lapack_int LAPACKE_dgesvd( int matrix_layout, char jobu, char jobvt,
         Z_PARAM_LONG(m)
         Z_PARAM_LONG(n)
 
-        Z_PARAM_OBJECT_OF_CLASS(objA,php_rindow_openblas_buffer_ce)
+        Z_PARAM_ZVAL(objA) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetA)
         Z_PARAM_LONG(ldA)
-        Z_PARAM_OBJECT_OF_CLASS(objS,php_rindow_openblas_buffer_ce)
+        Z_PARAM_ZVAL(objS) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetS)
 
-        Z_PARAM_OBJECT_OF_CLASS(objU,php_rindow_openblas_buffer_ce)
+        Z_PARAM_ZVAL(objU) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetU)
         Z_PARAM_LONG(ldU)
-        Z_PARAM_OBJECT_OF_CLASS(objVT,php_rindow_openblas_buffer_ce)
+        Z_PARAM_ZVAL(objVT) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetVT)
 
         Z_PARAM_LONG(ldVT)
-        Z_PARAM_OBJECT_OF_CLASS(objSuperB,php_rindow_openblas_buffer_ce)
+        Z_PARAM_ZVAL(objSuperB) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetSuperB)
     ZEND_PARSE_PARAMETERS_END();
 
@@ -152,35 +152,35 @@ lapack_int LAPACKE_dgesvd( int matrix_layout, char jobu, char jobvt,
         return;
     }
     // Check Buffer A
-    bufferA = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(objA);
+    bufferA = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(objA);
     if(php_rindow_openblas_assert_matrix_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_A, bufferA,m,n,offsetA,ldA)) {
         return;
     }
 
     // Check Buffer S
-    bufferS = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(objS);
+    bufferS = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(objS);
     if( offsetS+MIN(m,n) > bufferS->size) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "BufferS size is too small", 0);
         return;
     }
 
     // Check Buffer U
-    bufferU = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(objU);
+    bufferU = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(objU);
     if( offsetU+m*ldU > bufferU->size) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "BufferU size is too small", 0);
         return;
     }
 
     // Check Buffer VT
-    bufferVT = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(objVT);
+    bufferVT = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(objVT);
     if( offsetVT+ldVT*n > bufferVT->size) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "BufferVT size is too small", 0);
         return;
     }
 
     // Check Buffer SuperB
-    bufferSuperB = Z_RINDOW_OPENBLAS_BUFFER_OBJ_P(objSuperB);
+    bufferSuperB = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(objSuperB);
     if( offsetSuperB+MIN(m,n)-1 > bufferSuperB->size) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "bufferSuperB size is too small", 0);
         return;
@@ -197,7 +197,7 @@ lapack_int LAPACKE_dgesvd( int matrix_layout, char jobu, char jobvt,
     }
 
     switch (bufferA->dtype) {
-        case php_rindow_openblas_dtype_float32:
+        case php_interop_polite_math_matrix_dtype_float32:
             info = LAPACKE_sgesvd(
                 (int)matrix_layout,
                 (char)jobu,
@@ -210,7 +210,7 @@ lapack_int LAPACKE_dgesvd( int matrix_layout, char jobu, char jobvt,
                 &(((float *)bufferSuperB->data)[offsetSuperB])
             );
             break;
-        case php_rindow_openblas_dtype_float64:
+        case php_interop_polite_math_matrix_dtype_float64:
             info = LAPACKE_dgesvd(
                 (int)matrix_layout,
                 (char)jobu,
@@ -248,20 +248,20 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Lapack_gesvd, 0, 0, 18)
     ZEND_ARG_INFO(0, m)
     ZEND_ARG_INFO(0, n)
 
-    ZEND_ARG_OBJ_INFO(0, objA, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_OBJ_INFO(0, objA, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
     ZEND_ARG_INFO(0, offsetA)
     ZEND_ARG_INFO(0, ldA)
-    ZEND_ARG_OBJ_INFO(0, objS, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_OBJ_INFO(0, objS, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
     ZEND_ARG_INFO(0, offsetS)
 
-    ZEND_ARG_OBJ_INFO(0, objU, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_OBJ_INFO(0, objU, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
     ZEND_ARG_INFO(0, offsetU)
     ZEND_ARG_INFO(0, ldU)
-    ZEND_ARG_OBJ_INFO(0, objVT, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_OBJ_INFO(0, objVT, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
     ZEND_ARG_INFO(0, offsetVT)
 
     ZEND_ARG_INFO(0, ldVT)
-    ZEND_ARG_OBJ_INFO(0, objSuperB, Rindow\\OpenBLAS\\Buffer, 0)
+    ZEND_ARG_OBJ_INFO(0, objSuperB, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
     ZEND_ARG_INFO(0, offsetSuperB)
 ZEND_END_ARG_INFO()
 
