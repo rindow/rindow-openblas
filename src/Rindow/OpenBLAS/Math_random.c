@@ -62,7 +62,7 @@ static PHP_METHOD(Math, randomUniform)
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 7, 7)
         Z_PARAM_LONG(n)
-        Z_PARAM_ZVAL(x) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(x) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetX)
         Z_PARAM_LONG(incX)
         Z_PARAM_ZVAL(low_val)
@@ -72,6 +72,9 @@ static PHP_METHOD(Math, randomUniform)
 
     // Check Buffer X
     bufferX = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_buffer_type(bufferX,"x")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, bufferX,n,offsetX,incX)) {
         return;
@@ -163,7 +166,7 @@ static PHP_METHOD(Math, randomNormal)
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 7, 7)
         Z_PARAM_LONG(n)
-        Z_PARAM_ZVAL(x) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(x) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetX)
         Z_PARAM_LONG(incX)
         Z_PARAM_DOUBLE(mean)
@@ -173,6 +176,9 @@ static PHP_METHOD(Math, randomNormal)
 
     // Check Buffer X
     bufferX = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_buffer_type(bufferX,"x")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, bufferX,n,offsetX,incX)) {
         return;
@@ -234,7 +240,7 @@ static PHP_METHOD(Math, randomSequence)
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 6, 6)
         Z_PARAM_LONG(n)
         Z_PARAM_LONG(size)
-        Z_PARAM_ZVAL(x) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(x) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetX)
         Z_PARAM_LONG(incX)
         Z_PARAM_LONG(seed)
@@ -242,6 +248,9 @@ static PHP_METHOD(Math, randomSequence)
 
     // Check Buffer X
     bufferX = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_buffer_type(bufferX,"x")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, bufferX,n,offsetX,incX)) {
         return;

@@ -98,12 +98,15 @@ static PHP_METHOD(Blas, scal)
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 5, 5)
         Z_PARAM_LONG(n)
         Z_PARAM_DOUBLE(alpha)
-        Z_PARAM_ZVAL(x) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(x) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetX)
         Z_PARAM_LONG(incX)
     ZEND_PARSE_PARAMETERS_END();
 
     buffer = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_buffer_type(buffer,"x")) {
+        return;
+    }
     if(php_rindow_openblas_assert_shape_parameter(
         PHP_RINDOW_OPENBLAS_ASSERT_N, n)) {
         return;
@@ -149,10 +152,10 @@ static PHP_METHOD(Blas, axpy)
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 8, 8)
         Z_PARAM_LONG(n)
         Z_PARAM_DOUBLE(alpha)
-        Z_PARAM_ZVAL(x) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(x) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetX)
         Z_PARAM_LONG(incX)
-        Z_PARAM_ZVAL(y) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(y) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetY)
         Z_PARAM_LONG(incY)
     ZEND_PARSE_PARAMETERS_END();
@@ -163,6 +166,9 @@ static PHP_METHOD(Blas, axpy)
     }
     // Check Buffer X
     bufferX = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_buffer_type(bufferX,"x")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, bufferX,n,offsetX,incX)) {
         return;
@@ -170,6 +176,9 @@ static PHP_METHOD(Blas, axpy)
 
     // Check Buffer Y
     bufferY = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(y);
+    if(php_rindow_openblas_assert_buffer_type(bufferY,"y")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_Y, bufferY,n,offsetY,incY)) {
         return;
@@ -220,10 +229,10 @@ static PHP_METHOD(Blas, dot)
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 7, 7)
         Z_PARAM_LONG(n)
-        Z_PARAM_ZVAL(x) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(x) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetX)
         Z_PARAM_LONG(incX)
-        Z_PARAM_ZVAL(y) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(y) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetY)
         Z_PARAM_LONG(incY)
     ZEND_PARSE_PARAMETERS_END();
@@ -234,6 +243,9 @@ static PHP_METHOD(Blas, dot)
     }
     // Check Buffer X
     bufferX = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_buffer_type(bufferX,"x")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, bufferX,n,offsetX,incX)) {
         return;
@@ -241,6 +253,9 @@ static PHP_METHOD(Blas, dot)
 
     // Check Buffer Y
     bufferY = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(y);
+    if(php_rindow_openblas_assert_buffer_type(bufferY,"y")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_Y, bufferY,n,offsetY,incY)) {
         return;
@@ -288,7 +303,7 @@ static PHP_METHOD(Blas, asum)
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 4, 4)
         Z_PARAM_LONG(n)
-        Z_PARAM_ZVAL(x) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(x) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetX)
         Z_PARAM_LONG(incX)
     ZEND_PARSE_PARAMETERS_END();
@@ -298,6 +313,9 @@ static PHP_METHOD(Blas, asum)
         return;
     }
     buffer = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_buffer_type(buffer,"x")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, buffer,n,offsetX,incX)) {
         return;
@@ -333,7 +351,7 @@ static PHP_METHOD(Blas, iamax)
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 4, 4)
         Z_PARAM_LONG(n)
-        Z_PARAM_ZVAL(x) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(x) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetX)
         Z_PARAM_LONG(incX)
     ZEND_PARSE_PARAMETERS_END();
@@ -343,6 +361,9 @@ static PHP_METHOD(Blas, iamax)
         return;
     }
     buffer = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_buffer_type(buffer,"x")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, buffer,n,offsetX,incX)) {
         return;
@@ -379,7 +400,7 @@ static PHP_METHOD(Blas, iamin)
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 4, 4)
         Z_PARAM_LONG(n)
-        Z_PARAM_ZVAL(x) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(x) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetX)
         Z_PARAM_LONG(incX)
     ZEND_PARSE_PARAMETERS_END();
@@ -389,6 +410,9 @@ static PHP_METHOD(Blas, iamin)
         return;
     }
     buffer = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_buffer_type(buffer,"x")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, buffer,n,offsetX,incX)) {
         return;
@@ -429,10 +453,10 @@ static PHP_METHOD(Blas, copy)
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 7, 7)
         Z_PARAM_LONG(n)
-        Z_PARAM_ZVAL(x) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(x) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetX)
         Z_PARAM_LONG(incX)
-        Z_PARAM_ZVAL(y) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(y) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetY)
         Z_PARAM_LONG(incY)
     ZEND_PARSE_PARAMETERS_END();
@@ -443,6 +467,9 @@ static PHP_METHOD(Blas, copy)
     }
     // Check Buffer X
     bufferX = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_buffer_type(bufferX,"x")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, bufferX,n,offsetX,incX)) {
         return;
@@ -450,6 +477,9 @@ static PHP_METHOD(Blas, copy)
 
     // Check Buffer Y
     bufferY = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(y);
+    if(php_rindow_openblas_assert_buffer_type(bufferY,"y")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_Y, bufferY,n,offsetY,incY)) {
         return;
@@ -509,7 +539,7 @@ static PHP_METHOD(Blas, nrm2)
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 4, 4)
         Z_PARAM_LONG(n)
-        Z_PARAM_ZVAL(x) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(x) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetX)
         Z_PARAM_LONG(incX)
     ZEND_PARSE_PARAMETERS_END();
@@ -519,6 +549,9 @@ static PHP_METHOD(Blas, nrm2)
         return;
     }
     buffer = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_buffer_type(buffer,"x")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, buffer,n,offsetX,incX)) {
         return;
@@ -562,18 +595,21 @@ static PHP_METHOD(Blas, rotg)
     php_interop_polite_math_matrix_linear_buffer_t* bufferS;
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 8, 8)
-        Z_PARAM_ZVAL(a) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(a) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetA)
-        Z_PARAM_ZVAL(b) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(b) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetB)
-        Z_PARAM_ZVAL(c) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(c) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetC)
-        Z_PARAM_ZVAL(s) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(s) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetS)
     ZEND_PARSE_PARAMETERS_END();
 
     // Check Buffer A
     bufferA = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(a);
+    if(php_rindow_openblas_assert_buffer_type(bufferA,"a")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, bufferA,1,offsetA,1)) {
         return;
@@ -581,6 +617,9 @@ static PHP_METHOD(Blas, rotg)
 
     // Check Buffer B
     bufferB = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(b);
+    if(php_rindow_openblas_assert_buffer_type(bufferB,"b")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_Y, bufferB,1,offsetB,1)) {
         return;
@@ -588,6 +627,9 @@ static PHP_METHOD(Blas, rotg)
 
     // Check Buffer C
     bufferC = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(c);
+    if(php_rindow_openblas_assert_buffer_type(bufferC,"c")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, bufferC,1,offsetC,1)) {
         return;
@@ -595,6 +637,9 @@ static PHP_METHOD(Blas, rotg)
 
     // Check Buffer S
     bufferS = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(s);
+    if(php_rindow_openblas_assert_buffer_type(bufferS,"s")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_Y, bufferS,1,offsetS,1)) {
         return;
@@ -661,15 +706,15 @@ static PHP_METHOD(Blas, rot)
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 11, 11)
         Z_PARAM_LONG(n)
-        Z_PARAM_ZVAL(x) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(x) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetX)
         Z_PARAM_LONG(incX)
-        Z_PARAM_ZVAL(y) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(y) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetY)
         Z_PARAM_LONG(incY)
-        Z_PARAM_ZVAL(c) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(c) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetC)
-        Z_PARAM_ZVAL(s) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(s) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetS)
     ZEND_PARSE_PARAMETERS_END();
 
@@ -679,6 +724,9 @@ static PHP_METHOD(Blas, rot)
     }
     // Check Buffer X
     bufferX = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_buffer_type(bufferX,"x")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, bufferX,n,offsetX,incX)) {
         return;
@@ -686,6 +734,9 @@ static PHP_METHOD(Blas, rot)
 
     // Check Buffer Y
     bufferY = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(y);
+    if(php_rindow_openblas_assert_buffer_type(bufferY,"y")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_Y, bufferY,n,offsetY,incY)) {
         return;
@@ -693,6 +744,9 @@ static PHP_METHOD(Blas, rot)
 
     // Check Buffer C
     bufferC = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(c);
+    if(php_rindow_openblas_assert_buffer_type(bufferC,"c")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, bufferC,1,offsetC,1)) {
         return;
@@ -700,6 +754,9 @@ static PHP_METHOD(Blas, rot)
 
     // Check Buffer S
     bufferS = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(s);
+    if(php_rindow_openblas_assert_buffer_type(bufferS,"s")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_Y, bufferS,1,offsetS,1)) {
         return;
@@ -756,10 +813,10 @@ static PHP_METHOD(Blas, swap)
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 7, 7)
         Z_PARAM_LONG(n)
-        Z_PARAM_ZVAL(x) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(x) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetX)
         Z_PARAM_LONG(incX)
-        Z_PARAM_ZVAL(y) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(y) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetY)
         Z_PARAM_LONG(incY)
     ZEND_PARSE_PARAMETERS_END();
@@ -770,6 +827,9 @@ static PHP_METHOD(Blas, swap)
     }
     // Check Buffer X
     bufferX = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_buffer_type(bufferX,"x")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_X, bufferX,n,offsetX,incX)) {
         return;
@@ -777,6 +837,9 @@ static PHP_METHOD(Blas, swap)
 
     // Check Buffer Y
     bufferY = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(y);
+    if(php_rindow_openblas_assert_buffer_type(bufferY,"y")) {
+        return;
+    }
     if(php_rindow_openblas_assert_vector_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_Y, bufferY,n,offsetY,incY)) {
         return;
@@ -845,14 +908,14 @@ static PHP_METHOD(Blas, gemv)
         Z_PARAM_LONG(m)
         Z_PARAM_LONG(n)
         Z_PARAM_DOUBLE(alpha)
-        Z_PARAM_ZVAL(a) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(a) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetA)
         Z_PARAM_LONG(ldA)
-        Z_PARAM_ZVAL(x) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(x) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetX)
         Z_PARAM_LONG(incX)
         Z_PARAM_DOUBLE(beta)
-        Z_PARAM_ZVAL(y) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(y) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetY)
         Z_PARAM_LONG(incY)
     ZEND_PARSE_PARAMETERS_END();
@@ -867,6 +930,9 @@ static PHP_METHOD(Blas, gemv)
     }
     // Check Buffer A
     bufferA = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(a);
+    if(php_rindow_openblas_assert_buffer_type(bufferA,"a")) {
+        return;
+    }
     if(php_rindow_openblas_assert_matrix_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_A, bufferA,m,n,offsetA,ldA)) {
         return;
@@ -874,9 +940,15 @@ static PHP_METHOD(Blas, gemv)
 
     // Check Buffer X
     bufferX = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(x);
+    if(php_rindow_openblas_assert_buffer_type(bufferX,"x")) {
+        return;
+    }
 
     // Check Buffer Y
     bufferY = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(y);
+    if(php_rindow_openblas_assert_buffer_type(bufferY,"y")) {
+        return;
+    }
 
     // Check Buffer size X and Y
     {
@@ -980,14 +1052,14 @@ static PHP_METHOD(Blas, gemm)
         Z_PARAM_LONG(n)
         Z_PARAM_LONG(k)
         Z_PARAM_DOUBLE(alpha)
-        Z_PARAM_ZVAL(a) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(a) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetA)
         Z_PARAM_LONG(ldA)
-        Z_PARAM_ZVAL(b) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(b) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetB)
         Z_PARAM_LONG(ldB)
         Z_PARAM_DOUBLE(beta)
-        Z_PARAM_ZVAL(c) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(c) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetC)
         Z_PARAM_LONG(ldC)
     ZEND_PARSE_PARAMETERS_END();
@@ -1006,6 +1078,9 @@ static PHP_METHOD(Blas, gemm)
     }
     // Check Buffer A
     bufferA = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(a);
+    if(php_rindow_openblas_assert_buffer_type(bufferA,"a")) {
+        return;
+    }
     {
         zend_long rows,cols;
         if(transA==CblasNoTrans || transA==CblasConjNoTrans) {
@@ -1024,6 +1099,9 @@ static PHP_METHOD(Blas, gemm)
 
     // Check Buffer B
     bufferB = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(b);
+    if(php_rindow_openblas_assert_buffer_type(bufferB,"b")) {
+        return;
+    }
     {
         zend_long rows,cols;
         if(transB==CblasNoTrans || transB==CblasConjNoTrans) {
@@ -1042,6 +1120,9 @@ static PHP_METHOD(Blas, gemm)
 
     // Check Buffer C
     bufferC = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(c);
+    if(php_rindow_openblas_assert_buffer_type(bufferC,"c")) {
+        return;
+    }
     if(php_rindow_openblas_assert_matrix_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_C, bufferC,m,n,offsetC,ldC)) {
         return;
@@ -1127,14 +1208,14 @@ static PHP_METHOD(Blas, symm)
         Z_PARAM_LONG(m)
         Z_PARAM_LONG(n)
         Z_PARAM_DOUBLE(alpha)
-        Z_PARAM_ZVAL(a) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(a) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetA)
         Z_PARAM_LONG(ldA)
-        Z_PARAM_ZVAL(b) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(b) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetB)
         Z_PARAM_LONG(ldB)
         Z_PARAM_DOUBLE(beta)
-        Z_PARAM_ZVAL(c) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(c) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetC)
         Z_PARAM_LONG(ldC)
     ZEND_PARSE_PARAMETERS_END();
@@ -1149,6 +1230,13 @@ static PHP_METHOD(Blas, symm)
     }
     // Check Buffer A
     bufferA = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(a);
+    if(php_rindow_openblas_assert_buffer_type(bufferA,"a")) {
+        return;
+    }
+    if(!php_interop_polite_math_matrix_is_linear_buffer(bufferA)) {
+        zend_throw_exception(zend_ce_type_error, "invalid type.", 0);
+        return;
+    }
     {
         zend_long rows;
         if(side==CblasLeft) {
@@ -1167,6 +1255,9 @@ static PHP_METHOD(Blas, symm)
 
     // Check Buffer B
     bufferB = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(b);
+    if(php_rindow_openblas_assert_buffer_type(bufferB,"b")) {
+        return;
+    }
     {
         if(php_rindow_openblas_assert_matrix_buffer_spec(
             PHP_RINDOW_OPENBLAS_ASSERT_B, bufferB,m,n,offsetB,ldB)) {
@@ -1176,6 +1267,9 @@ static PHP_METHOD(Blas, symm)
 
     // Check Buffer C
     bufferC = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(c);
+    if(php_rindow_openblas_assert_buffer_type(bufferC,"c")) {
+        return;
+    }
     if(php_rindow_openblas_assert_matrix_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_C, bufferC,m,n,offsetC,ldC)) {
         return;
@@ -1256,11 +1350,11 @@ static PHP_METHOD(Blas, syrk)
         Z_PARAM_LONG(n)
         Z_PARAM_LONG(k)
         Z_PARAM_DOUBLE(alpha)
-        Z_PARAM_ZVAL(a) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(a) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetA)
         Z_PARAM_LONG(ldA)
         Z_PARAM_DOUBLE(beta)
-        Z_PARAM_ZVAL(c) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(c) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetC)
         Z_PARAM_LONG(ldC)
     ZEND_PARSE_PARAMETERS_END();
@@ -1275,6 +1369,9 @@ static PHP_METHOD(Blas, syrk)
     }
     // Check Buffer A
     bufferA = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(a);
+    if(php_rindow_openblas_assert_buffer_type(bufferA,"a")) {
+        return;
+    }
     {
         zend_long rows,cols;
         if(trans==CblasNoTrans || trans==CblasConjNoTrans) {
@@ -1293,6 +1390,9 @@ static PHP_METHOD(Blas, syrk)
 
     // Check Buffer C
     bufferC = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(c);
+    if(php_rindow_openblas_assert_buffer_type(bufferC,"c")) {
+        return;
+    }
     if(php_rindow_openblas_assert_matrix_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_C, bufferC,n,n,offsetC,ldC)) {
         return;
@@ -1376,14 +1476,14 @@ static PHP_METHOD(Blas, syr2k)
         Z_PARAM_LONG(n)
         Z_PARAM_LONG(k)
         Z_PARAM_DOUBLE(alpha)
-        Z_PARAM_ZVAL(a) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(a) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetA)
         Z_PARAM_LONG(ldA)
-        Z_PARAM_ZVAL(b) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(b) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetB)
         Z_PARAM_LONG(ldB)
         Z_PARAM_DOUBLE(beta)
-        Z_PARAM_ZVAL(c) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(c) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetC)
         Z_PARAM_LONG(ldC)
     ZEND_PARSE_PARAMETERS_END();
@@ -1398,7 +1498,13 @@ static PHP_METHOD(Blas, syr2k)
     }
     // Check Buffer A and B
     bufferA = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(a);
+    if(php_rindow_openblas_assert_buffer_type(bufferA,"a")) {
+        return;
+    }
     bufferB = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(b);
+    if(php_rindow_openblas_assert_buffer_type(bufferB,"b")) {
+        return;
+    }
     {
         zend_long rows,cols;
         if(trans==CblasNoTrans || trans==CblasConjNoTrans) {
@@ -1421,6 +1527,9 @@ static PHP_METHOD(Blas, syr2k)
 
     // Check Buffer C
     bufferC = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(c);
+    if(php_rindow_openblas_assert_buffer_type(bufferC,"c")) {
+        return;
+    }
     if(php_rindow_openblas_assert_matrix_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_C, bufferC,n,n,offsetC,ldC)) {
         return;
@@ -1505,10 +1614,10 @@ static PHP_METHOD(Blas, trmm)
         Z_PARAM_LONG(m)
         Z_PARAM_LONG(n)
         Z_PARAM_DOUBLE(alpha)
-        Z_PARAM_ZVAL(a) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(a) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetA)
         Z_PARAM_LONG(ldA)
-        Z_PARAM_ZVAL(b) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(b) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetB)
         Z_PARAM_LONG(ldB)
     ZEND_PARSE_PARAMETERS_END();
@@ -1523,6 +1632,9 @@ static PHP_METHOD(Blas, trmm)
     }
     // Check Buffer A
     bufferA = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(a);
+    if(php_rindow_openblas_assert_buffer_type(bufferA,"a")) {
+        return;
+    }
     {
         zend_long sizeA;
         if(side==CblasLeft) {
@@ -1539,6 +1651,9 @@ static PHP_METHOD(Blas, trmm)
         }
     }
     bufferB = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(b);
+    if(php_rindow_openblas_assert_buffer_type(bufferB,"b")) {
+        return;
+    }
     if(php_rindow_openblas_assert_matrix_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_B, bufferB,m,n,offsetB,ldB)) {
         return;
@@ -1623,10 +1738,10 @@ static PHP_METHOD(Blas, trsm)
         Z_PARAM_LONG(m)
         Z_PARAM_LONG(n)
         Z_PARAM_DOUBLE(alpha)
-        Z_PARAM_ZVAL(a) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(a) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetA)
         Z_PARAM_LONG(ldA)
-        Z_PARAM_ZVAL(b) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(b) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetB)
         Z_PARAM_LONG(ldB)
     ZEND_PARSE_PARAMETERS_END();
@@ -1641,6 +1756,9 @@ static PHP_METHOD(Blas, trsm)
     }
     // Check Buffer A
     bufferA = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(a);
+    if(php_rindow_openblas_assert_buffer_type(bufferA,"a")) {
+        return;
+    }
     {
         zend_long sizeA;
         if(side==CblasLeft) {
@@ -1657,6 +1775,9 @@ static PHP_METHOD(Blas, trsm)
         }
     }
     bufferB = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(b);
+    if(php_rindow_openblas_assert_buffer_type(bufferB,"b")) {
+        return;
+    }
     if(php_rindow_openblas_assert_matrix_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_B, bufferB,m,n,offsetB,ldB)) {
         return;

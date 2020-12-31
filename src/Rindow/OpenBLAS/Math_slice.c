@@ -45,10 +45,10 @@ static PHP_METHOD(Math, slice)
         Z_PARAM_LONG(n)
         Z_PARAM_LONG(k)
 
-        Z_PARAM_ZVAL(obja) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(obja) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetA)
         Z_PARAM_LONG(incA)
-        Z_PARAM_ZVAL(objy) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(objy) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetY)
 
         Z_PARAM_LONG(incY)
@@ -88,12 +88,18 @@ static PHP_METHOD(Math, slice)
     }
     // Check Buffer A
     bufferA = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(obja);
+    if(php_rindow_openblas_assert_buffer_type(bufferA,"a")) {
+        return;
+    }
     if(m*n*k*incA+offsetA > bufferA->size) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch BufferA size and m,n,k", 0);
         return;
     }
     // Check Buffer Y
     bufferY = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(objy);
+    if(php_rindow_openblas_assert_buffer_type(bufferY,"y")) {
+        return;
+    }
     if(sizeAxis0*sizeAxis1*k*incY+offsetY > bufferY->size) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "BufferY size is too small", 0);
         return;

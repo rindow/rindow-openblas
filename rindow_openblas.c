@@ -198,6 +198,18 @@ int php_rindow_openblas_assert_buffer_size(
     return 0;
 }
 
+int php_rindow_openblas_assert_buffer_type(
+    php_interop_polite_math_matrix_linear_buffer_t *buffer,
+    char* name)
+{
+    if(!php_interop_polite_math_matrix_is_linear_buffer(buffer)) {
+        zend_throw_exception_ex(zend_ce_type_error, 0, "%s must implement interface %s",
+            name,PHP_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_CLASSNAME);
+        return 1;
+    }
+    return 0;
+}
+
 /* {{{ PHP_RINIT_FUNCTION
  */
 PHP_RINIT_FUNCTION(rindow_openblas)

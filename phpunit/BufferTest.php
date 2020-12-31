@@ -208,7 +208,11 @@ class Test extends TestCase
     {
         $buf = new Buffer(3,NDArray::float32);
         $this->expectException(ArgumentCountError::class);
-        $this->expectExceptionMessage('offsetSet() expects exactly 2 parameters, 0 given');
+        if(version_compare(PHP_VERSION, '8.0.0')<0) {
+            $this->expectExceptionMessage('offsetSet() expects exactly 2 parameters, 0 given');
+        } else {
+            $this->expectExceptionMessage('offsetSet() expects exactly 2 arguments, 0 given');
+        }
         $a = $buf->offsetSet();
     }
 
@@ -216,7 +220,11 @@ class Test extends TestCase
     {
         $buf = new Buffer(3,NDArray::float32);
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('offsetSet() expects parameter 1 to be int');
+        if(version_compare(PHP_VERSION, '8.0.0')<0) {
+            $this->expectExceptionMessage('offsetSet() expects parameter 1 to be int');
+        } else {
+            $this->expectExceptionMessage('offsetSet(): Argument #1 ($offset) must be of type int');
+        }
         $buf->offsetSet(new \stdClass(),1);
     }
 
@@ -224,7 +232,11 @@ class Test extends TestCase
     {
         $buf = new Buffer(3,NDArray::float32);
         $this->expectException(ArgumentCountError::class);
-        $this->expectExceptionMessage('offsetGet() expects exactly 1 parameter, 0 given');
+        if(version_compare(PHP_VERSION, '8.0.0')<0) {
+            $this->expectExceptionMessage('offsetGet() expects exactly 1 parameter, 0 given');
+        } else {
+            $this->expectExceptionMessage('offsetGet() expects exactly 1 argument, 0 given');
+        }
         $a = $buf->offsetGet();
     }
 
@@ -232,7 +244,11 @@ class Test extends TestCase
     {
         $buf = new Buffer(3,NDArray::float32);
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('offsetGet() expects parameter 1 to be int');
+        if(version_compare(PHP_VERSION, '8.0.0')<0) {
+            $this->expectExceptionMessage('offsetGet() expects parameter 1 to be int');
+        } else {
+            $this->expectExceptionMessage('offsetGet(): Argument #1 ($offset) must be of type int');
+        }
         $a = $buf->offsetGet(new \stdClass());
     }
 
@@ -240,7 +256,11 @@ class Test extends TestCase
     {
         $buf = new Buffer(3,NDArray::float32);
         $this->expectException(ArgumentCountError::class);
-        $this->expectExceptionMessage('offsetUnset() expects exactly 1 parameter, 0 given');
+        if(version_compare(PHP_VERSION, '8.0.0')<0) {
+            $this->expectExceptionMessage('offsetUnset() expects exactly 1 parameter, 0 given');
+        } else {
+            $this->expectExceptionMessage('offsetUnset() expects exactly 1 argument, 0 given');
+        }
         $buf->offsetUnset();
     }
 
@@ -248,7 +268,11 @@ class Test extends TestCase
     {
         $buf = new Buffer(3,NDArray::float32);
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('offsetUnset() expects parameter 1 to be int');
+        if(version_compare(PHP_VERSION, '8.0.0')<0) {
+            $this->expectExceptionMessage('offsetUnset() expects parameter 1 to be int');
+        } else {
+            $this->expectExceptionMessage('offsetUnset(): Argument #1 ($offset) must be of type int');
+        }
         $buf->offsetUnset(new \stdClass());
     }
 
@@ -256,7 +280,11 @@ class Test extends TestCase
     {
         $buf = new Buffer(3,NDArray::float32);
         $this->expectException(ArgumentCountError::class);
-        $this->expectExceptionMessage('load() expects exactly 1 parameter, 0 given');
+        if(version_compare(PHP_VERSION, '8.0.0')<0) {
+            $this->expectExceptionMessage('load() expects exactly 1 parameter, 0 given');
+        } else {
+            $this->expectExceptionMessage('load() expects exactly 1 argument, 0 given');
+        }
         $buf->load();
     }
 
@@ -264,21 +292,33 @@ class Test extends TestCase
     {
         $buf = new Buffer(3,NDArray::float32);
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('load() expects parameter 1 to be string');
+        if(version_compare(PHP_VERSION, '8.0.0')<0) {
+            $this->expectExceptionMessage('load() expects parameter 1 to be string');
+        } else {
+            $this->expectExceptionMessage('load(): Argument #1 must be of type string');
+        }
         $buf->load(new \stdClass());
     }
 
     public function testConstractWithNoArgument()
     {
         $this->expectException(ArgumentCountError::class);
-        $this->expectExceptionMessage('__construct() expects exactly 2 parameters, 0 given');
+        if(version_compare(PHP_VERSION, '8.0.0')<0) {
+            $this->expectExceptionMessage('__construct() expects exactly 2 parameters, 0 given');
+        } else {
+            $this->expectExceptionMessage('__construct() expects exactly 2 arguments, 0 given');
+        }
         $buf = new Buffer();
     }
 
     public function testConstractIllegalType()
     {
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('__construct() expects parameter 1 to be int');
+        if(version_compare(PHP_VERSION, '8.0.0')<0) {
+            $this->expectExceptionMessage('__construct() expects parameter 1 to be int');
+        } else {
+            $this->expectExceptionMessage('__construct(): Argument #1 ($size) must be of type int');
+        }
         $buf = new Buffer(new \stdClass(),NDArray::float32);
     }
 }

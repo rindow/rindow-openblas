@@ -102,20 +102,20 @@ lapack_int LAPACKE_dgesvd( int matrix_layout, char jobu, char jobvt,
         Z_PARAM_LONG(m)
         Z_PARAM_LONG(n)
 
-        Z_PARAM_ZVAL(objA) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(objA) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetA)
         Z_PARAM_LONG(ldA)
-        Z_PARAM_ZVAL(objS) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(objS) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetS)
 
-        Z_PARAM_ZVAL(objU) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(objU) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetU)
         Z_PARAM_LONG(ldU)
-        Z_PARAM_ZVAL(objVT) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(objVT) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetVT)
 
         Z_PARAM_LONG(ldVT)
-        Z_PARAM_ZVAL(objSuperB) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(objSuperB) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(offsetSuperB)
     ZEND_PARSE_PARAMETERS_END();
 
@@ -153,6 +153,9 @@ lapack_int LAPACKE_dgesvd( int matrix_layout, char jobu, char jobvt,
     }
     // Check Buffer A
     bufferA = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(objA);
+    if(php_rindow_openblas_assert_buffer_type(bufferA,"a")) {
+        return;
+    }
     if(php_rindow_openblas_assert_matrix_buffer_spec(
         PHP_RINDOW_OPENBLAS_ASSERT_A, bufferA,m,n,offsetA,ldA)) {
         return;
@@ -160,6 +163,9 @@ lapack_int LAPACKE_dgesvd( int matrix_layout, char jobu, char jobvt,
 
     // Check Buffer S
     bufferS = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(objS);
+    if(php_rindow_openblas_assert_buffer_type(bufferS,"s")) {
+        return;
+    }
     if( offsetS+MIN(m,n) > bufferS->size) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "BufferS size is too small", 0);
         return;
@@ -167,6 +173,9 @@ lapack_int LAPACKE_dgesvd( int matrix_layout, char jobu, char jobvt,
 
     // Check Buffer U
     bufferU = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(objU);
+    if(php_rindow_openblas_assert_buffer_type(bufferU,"u")) {
+        return;
+    }
     if( offsetU+m*ldU > bufferU->size) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "BufferU size is too small", 0);
         return;
@@ -174,6 +183,9 @@ lapack_int LAPACKE_dgesvd( int matrix_layout, char jobu, char jobvt,
 
     // Check Buffer VT
     bufferVT = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(objVT);
+    if(php_rindow_openblas_assert_buffer_type(bufferVT,"vt")) {
+        return;
+    }
     if( offsetVT+ldVT*n > bufferVT->size) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "BufferVT size is too small", 0);
         return;
@@ -181,6 +193,9 @@ lapack_int LAPACKE_dgesvd( int matrix_layout, char jobu, char jobvt,
 
     // Check Buffer SuperB
     bufferSuperB = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(objSuperB);
+    if(php_rindow_openblas_assert_buffer_type(bufferSuperB,"b")) {
+        return;
+    }
     if( offsetSuperB+MIN(m,n)-1 > bufferSuperB->size) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "bufferSuperB size is too small", 0);
         return;

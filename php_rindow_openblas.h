@@ -5,7 +5,7 @@
 
 # define phpext_rindow_openblas_ptr &rindow_openblas_module_entry
 
-# define PHP_RINDOW_OPENBLAS_VERSION "0.2.0"
+# define PHP_RINDOW_OPENBLAS_VERSION "0.2.1"
 
 # if defined(ZTS) && defined(COMPILE_DL_RINDOW_OPENBLAS)
 ZEND_TSRMLS_CACHE_EXTERN()
@@ -82,5 +82,8 @@ extern int php_rindow_openblas_assert_buffer_size(
     php_interop_polite_math_matrix_linear_buffer_t *buffer,
     zend_long offset,zend_long size,
     char* message);
+extern int php_rindow_openblas_assert_buffer_type(
+    php_interop_polite_math_matrix_linear_buffer_t *buffer,
+    char* name);
 
 #endif	/* PHP_RINDOW_OPENBLAS_H */

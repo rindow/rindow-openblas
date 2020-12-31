@@ -864,7 +864,11 @@ class Test extends TestCase
             $this->translate_increment($X,10,2);
 
         $this->expectException(TypeError::class);
-        $this->expectExceptionMessage('parameter 2 to be float');
+        if(version_compare(PHP_VERSION, '8.0.0')<0) {
+            $this->expectExceptionMessage('parameter 2 to be float');
+        } else {
+            $this->expectExceptionMessage('Argument #2 ($alpha) must be of type float');
+        }
         $math->increment($N,new \stdClass(),$XX,$offX,$incX,$beta);
     }
 

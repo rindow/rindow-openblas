@@ -259,7 +259,7 @@ static PHP_METHOD(Math, im2col1d)
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 16, 16)
         Z_PARAM_BOOL(reverse)
-        Z_PARAM_ZVAL(images_obj) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(images_obj) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(images_offset)
         Z_PARAM_LONG(images_size)
         Z_PARAM_LONG(batches)
@@ -273,19 +273,25 @@ static PHP_METHOD(Math, im2col1d)
         Z_PARAM_BOOL(channels_first)
         Z_PARAM_LONG(dilation_w)
         Z_PARAM_BOOL(cols_channels_first)
-        Z_PARAM_ZVAL(cols_obj) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_OBJECT(cols_obj) // Interop\Polite\Math\Matrix\LinearBuffer
         Z_PARAM_LONG(cols_offset)
 
         Z_PARAM_LONG(cols_size)
     ZEND_PARSE_PARAMETERS_END();
 
     images = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(images_obj);
+    if(php_rindow_openblas_assert_buffer_type(images,"images")) {
+        return;
+    }
     if(php_rindow_openblas_assert_buffer_size(
         images, images_offset, images_size,
         "Invalid images buffer offset or size")) {
         return;
     }
     cols = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(cols_obj);
+    if(php_rindow_openblas_assert_buffer_type(cols,"cols")) {
+        return;
+    }
     if(php_rindow_openblas_assert_buffer_size(
         cols, cols_offset, cols_size,
         "Invalid cols buffer offset or size")) {

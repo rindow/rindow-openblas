@@ -31,6 +31,7 @@ static zend_object* php_rindow_openblas_buffer_create_object(zend_class_entry* c
     php_interop_polite_math_matrix_linear_buffer_t* intern = NULL;
 
     intern = (php_interop_polite_math_matrix_linear_buffer_t*)ecalloc(1, sizeof(php_interop_polite_math_matrix_linear_buffer_t) + zend_object_properties_size(class_type));
+    intern->signature = PHP_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_SIGNATURE;
 
     zend_object_std_init(&intern->std, class_type);
     object_properties_init(&intern->std, class_type);
