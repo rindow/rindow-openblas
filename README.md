@@ -13,7 +13,7 @@ Very useful when you want to do deep learning with PHP!
 Requirements
 ============
 
-- PHP7.2 or PHP7.3 or PHP7.4
+- PHP7.2 or PHP7.3 or PHP7.4 or PHP8.0
 - Linux or Windows 10
 - OpenBLAS
 
@@ -34,14 +34,14 @@ Please Download the version of OpenBLAS binaries that correspond to the rindow_o
 Unzip it to a suitable location and set the execution path in the bin directory.
 
 ```shell
-TMP>copy rindow_openblas.dll \path\to\php\ext
+TMP>copy rindow-openblas-phpX.X-X.X.X-openblasX.X.XX-win-ts-vXXX-x64\rindow_openblas.dll \path\to\php\ext
 TMP>set PATH=%PATH%;\path\to\OpenBLAS\bin
 ```
 
 For Ubuntu, use the apt command to install the deb file.
 
 ```shell
-$ sudo apt install ./rindow-openblas-php7.X_X.X.X-X+ubuntuXX.XX_amd64.deb
+$ sudo apt install ./rindow-openblas-phpX.X_X.X.X-X+ubuntuXX.XX_amd64.deb
 ```
 
 How to build from source code on Linux
@@ -81,7 +81,7 @@ $ make test
 ```shell
 $ sudo make install
 ```
-Add the "extension=rindow_openblas.so" entry to php.ini
+Add the "extension=rindow_openblas" entry to php.ini
 
 
 
@@ -90,25 +90,24 @@ How to build from source code on Windows
 You can also build and use from source code.
 
 
-Build OpenBLAS for MSVC 15 on Windows
--------------------------------------
-
+Download or Build OpenBLAS for MSVC on Windows
+----------------------------------------------
 ### Download binaries for the OpenBLAS libray
 You need to build OpenBLAS libray for MSVC or download built binaries of libray for MSVC.
 
 If you want to use the pre-built OpenBLAS libray, you need OpenBLAS release 0.3.10 or later.
 
-This binary can be used in pure msvc only environment unlike the binary on openblas site.
+- https://github.com/xianyi/OpenBLAS/releases
 
-- [Rindow OpenBLAS Development Kit for Windows](https://github.com/rindow/rindow-openblas-binaries/tree/master/devel/windows)
-
-### Install VC15
-Developing PHP extensions from php7.2 to php7.4 requires VC15 instead of the latest VC.
+### Install VC15 or VC16
+Developing PHP extensions for php7.2,php7.3 and php7.4 requires VC15 instead of the latest VC.
 
 - Install Microsoft Visual Studio 2019 or later installer
 - Run Installer with vs2017 build tools option.
 
-### Build OpenBLAS for pure MSVC
+Developing PHP extensions from php8.0 requires VS16. You can use Visual Studio 2019.
+
+### Build OpenBLAS for pure MSVC from sources
 If you want to build the OpenBLAS on MSVC with static library instead you use pre-build binary on our site, you can build it yourself.
 
 https://github.com/xianyi/OpenBLAS/wiki/How-to-use-OpenBLAS-in-Microsoft-Visual-Studio
@@ -126,7 +125,6 @@ Anaconda3>cmake .. -G "Ninja" -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER=c
 Anaconda3>cmake --build . --config Release
 ```
 
-
 Build the extension for Windows
 -------------------------------
 
@@ -137,10 +135,12 @@ https://wiki.php.net/internals/windows/stepbystepbuild_sdk_2
 ### php sdk and devel-pack binaries for windows
 
 - You must know that PHP 7.2,7.3 and 7.4 needs environment for the MSVC version vc15 (that means Visual Studio 2017). php-sdk releases 2.1.9 supports vc15.
-- Download https://github.com/microsoft/php-sdk-binary-tools/releases/tag/php-sdk-2.1.9
+- For PHP 7.x, Download the php-sdk from https://github.com/microsoft/php-sdk-binary-tools/releases/tag/php-sdk-2.1.9
+- If you want to build extensions for PHP 8.0, You have to use php-sdk release 2.2.0. It supports vs16.
+- For PHP 8.0, Download the php-sdk from https://github.com/microsoft/php-sdk-binary-tools/releases/tag/php-sdk-2.2.0
 - Extract to c:\php-sdk
 - Download target dev-pack from https://windows.php.net/downloads/releases/
-- Extract to /path/to/php-devel-pack-7.x.x-Win32-VC15-x64/
+- Extract to /path/to/php-devel-pack-x.x.x-Win32-Vxxx-x64/
 
 ### start php-sdk for target PHP version
 
@@ -148,21 +148,28 @@ Open Visual Studio Command Prompt for VS for the target PHP version(see stepbyst
 Note that you must explicitly specify the version of vc15 for which php.exe was built.
 The -vcvars_ver=14.16 means vc15.
 
+If you want to build for PHP 8.0, No options required.
+
 ```shell
 C:\visual\studio\path>vcvars64 -vcvars_ver=14.16
+or
+C:\visual\studio\path>vcvars64
 
-C:\tmp>cd c:\php-sdk
-C:\php-sdk>phpsdk-vc15-x64.bat
+C:\tmp>cd c:\php-sdk-x.x.x
+
+C:\php-sdk-2.1.9>phpsdk-vc15-x64.bat
+or
+C:\php-sdk-2.2.0>phpsdk-vs16-x64.bat
+
 ```
 
 ### Build
 
 ```shell
 $ PATH %PATH%;/path/to/OpenBLAS/bin
-( It need the path of flang.dll. you can get it [here](https://github.com/rindow/rindow-openblas-binaries/tree/master/devel/windows))
 $ cd /path/to/here
 $ composer update
-$ /path/to/php-devel-pack-7.x.x-Win32-VC15-x64/phpize.bat
+$ /path/to/php-devel-pack-x.x.x-Win32-VXXX-x64/phpize.bat
 $ configure --enable-rindow_openblas --with-prefix=/path/to/php-installation-path --with-openblas=/path/to/OpenBLAS-libray-built-directory
 $ nmake clean
 $ nmake
@@ -172,4 +179,4 @@ $ nmake test
 ### Install from built directory
 
 - Copy the php extension binary(.dll) to the php/ext directory from here/arch/Releases_TS/php_rindow_openblas.dll
-- Add the "extension=" entry to php.ini
+- Add the "extension=php_rindow_openblas" entry to php.ini
