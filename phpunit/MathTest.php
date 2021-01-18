@@ -365,51 +365,50 @@ class Test extends TestCase
     }
 
     public function translate_reduceSum(
-       NDArray $A,
-       int $axis=null,
-       NDArray $X=null
-       ) : array
-   {
-       if($axis===null)
-           $axis = 0;
-       if($axis!==0 && $axis!==1 && $axis!==-1)
-           throw new InvalidArgumentException('"axis" must be 0 or 1 or -1.');
-       if($axis===-1) {
-           $axis = 1;
-       }
-       $shapeA = $A->shape();
-       if($axis==0) {
-           $trans = true;
-           $rows = array_pop($shapeA);
-       } else {
-           $trans = false;
-           $rows = $shapeA[0];
-       }
-
-       if($X==null) {
-           $X = $this->alloc([$rows],$A->dtype());
-       } else {
-           if($X->shape()!=[$rows]) {
-               $shapeError = '('.implode(',',$A->shape()).'),('.implode(',',$X->shape()).')';
-               throw new InvalidArgumentException("Unmatch shape of dimension: ".$shapeError);
-           }
-       }
-
-       $m = $A->shape()[0];
-       $n = $A->size()/$m;
-       $AA = $A->buffer();
-       $offA = $A->offset();
-       $XX = $X->buffer();
-       $offX = $X->offset();
-
-       return [
-           $trans,
-           $m,
-           $n,
-           $AA,$offA,$n,
-           $XX,$offX,1
-       ];
-   }
+        NDArray $A,
+        int $axis=null,
+        NDArray $B=null,
+        $dtype=null) : array
+    {
+        $ndim = $A->ndim();
+        if($axis<0) {
+            $axis = $ndim+$axis;
+        }
+        if($axis<0 || $axis>$ndim-1) {
+            throw new InvalidArgumentException("Invalid axis");
+        }
+        $postfixShape = $A->shape();
+        $prefixShape = [];
+        for($i=0;$i<$axis;$i++) {
+            $prefixShape[] = array_shift($postfixShape);
+        }
+        $n = array_shift($postfixShape);
+        $m = array_product($prefixShape);
+        $k = array_product($postfixShape);
+        $outputShape = array_merge($prefixShape,$postfixShape);
+        if($dtype===null) {
+            $dtype = $A->dtype();
+        }
+        if($B==null) {
+            $B = $this->alloc($outputShape,$dtype);
+        } else {
+            if($B->shape()!=$outputShape) {
+                $shapeError = '('.implode(',',$A->shape()).'),('.implode(',',$B->shape()).')';
+                throw new InvalidArgumentException("Unmatch shape of dimension: ".$shapeError);
+            }
+        }
+        $AA = $A->buffer();
+        $offA = $A->offset();
+        $BB = $B->buffer();
+        $offB = $B->offset();
+        return [
+            $m,
+            $n,
+            $k,
+            $AA,$offA,
+            $BB,$offB
+        ];
+    }
 
    public function translate_astype(NDArray $X, $dtype, NDArray $Y) : array
    {
@@ -4812,10 +4811,10 @@ class Test extends TestCase
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([0,0]);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+        [$m,$n,$k,$AA,$offA,$BB,$offB] =
             $this->translate_reduceSum($A,$axis=1,$X);
 
-        $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $math->reduceSum($m,$n,$k,$AA,$offA,$BB,$offB);
         $this->assertEquals([6,15],$X->toArray());
     }
 
@@ -4828,10 +4827,10 @@ class Test extends TestCase
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([0,0,0]);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+        [$m,$n,$k,$AA,$offA,$BB,$offB] =
             $this->translate_reduceSum($A,$axis=0,$X);
 
-        $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $math->reduceSum($m,$n,$k,$AA,$offA,$BB,$offB);
         $this->assertEquals([5,7,9],$X->toArray());
     }
 
@@ -4844,13 +4843,31 @@ class Test extends TestCase
 
         $X = $mo->array([0,0]);
         $A = $mo->array([[1,2,3],[4,5,6]]);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+        [$m,$n,$k,$AA,$offA,$BB,$offB] =
             $this->translate_reduceSum($A,$axis=1,$X);
 
-        $M = 0;
+        $m = 0;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument m must be greater than 0.');
-        $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $math->reduceSum($m,$n,$k,$AA,$offA,$BB,$offB);
+    }
+
+    public function testreduceSumMinusK()
+    {
+        if($this->checkSkip('reduceSum')){return;}
+
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([0,0]);
+        $A = $mo->array([[1,2,3],[4,5,6]]);
+        [$m,$n,$k,$AA,$offA,$BB,$offB] =
+            $this->translate_reduceSum($A,$axis=1,$X);
+
+        $k = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument k must be greater than 0.');
+        $math->reduceSum($m,$n,$k,$AA,$offA,$BB,$offB);
     }
 
     public function testreduceSumMinusN()
@@ -4862,16 +4879,16 @@ class Test extends TestCase
 
         $X = $mo->array([0,0]);
         $A = $mo->array([[1,2,3],[4,5,6]]);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+        [$m,$n,$k,$AA,$offA,$BB,$offB] =
             $this->translate_reduceSum($A,$axis=1,$X);
 
-        $N = 0;
+        $n = 0;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument n must be greater than 0.');
-        $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $math->reduceSum($m,$n,$k,$AA,$offA,$BB,$offB);
     }
 
-    public function testreduceSumMinusOffsetX()
+    public function testreduceSumMinusOffsetB()
     {
         if($this->checkSkip('reduceSum')){return;}
 
@@ -4880,16 +4897,16 @@ class Test extends TestCase
 
         $X = $mo->array([0,0]);
         $A = $mo->array([[1,2,3],[4,5,6]]);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+        [$m,$n,$k,$AA,$offA,$BB,$offB] =
             $this->translate_reduceSum($A,$axis=1,$X);
 
-        $offX = -1;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Argument offsetX must be greater than equals 0.');
-        $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $offB = -1;
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Argument offsetB must be greater than or equals 0.');
+        $math->reduceSum($m,$n,$k,$AA,$offA,$BB,$offB);
     }
 
-    public function testreduceSumMinusIncX()
+    public function testreduceSumIllegalBufferB()
     {
         if($this->checkSkip('reduceSum')){return;}
 
@@ -4898,34 +4915,16 @@ class Test extends TestCase
 
         $X = $mo->array([0,0]);
         $A = $mo->array([[1,2,3],[4,5,6]]);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+        [$m,$n,$k,$AA,$offA,$BB,$offB] =
             $this->translate_reduceSum($A,$axis=1,$X);
 
-        $incX = 0;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Argument incX must be greater than 0.');
-        $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
-    }
-
-    public function testreduceSumIllegalBufferX()
-    {
-        if($this->checkSkip('reduceSum')){return;}
-
-        $mo = new MatrixOperator();
-        $math = $this->getMath($mo);
-
-        $X = $mo->array([0,0]);
-        $A = $mo->array([[1,2,3],[4,5,6]]);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
-            $this->translate_reduceSum($A,$axis=1,$X);
-
-        $XX = new \stdClass();
+        $BB = new \stdClass();
         $this->expectException(TypeError::class);
         $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
-        $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $math->reduceSum($m,$n,$k,$AA,$offA,$BB,$offB);
     }
 
-    public function testreduceSumOverflowBufferXwithSize()
+    public function testreduceSumOverflowBufferBwithSize()
     {
         if($this->checkSkip('reduceSum')){return;}
 
@@ -4934,16 +4933,16 @@ class Test extends TestCase
 
         $X = $mo->array([0,0]);
         $A = $mo->array([[1,2,3],[4,5,6]]);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+        [$m,$n,$k,$AA,$offA,$BB,$offB] =
             $this->translate_reduceSum($A,$axis=1,$X);
 
-        $XX = $mo->array([1])->buffer();
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $BB = $mo->array([1])->buffer();
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferB');
+        $math->reduceSum($m,$n,$k,$AA,$offA,$BB,$offB);
     }
 
-    public function testreduceSumOverflowBufferXwithOffsetX()
+    public function testreduceSumOverflowBufferBwithOffsetB()
     {
         if($this->checkSkip('reduceSum')){return;}
 
@@ -4952,31 +4951,13 @@ class Test extends TestCase
 
         $X = $mo->array([0,0]);
         $A = $mo->array([[1,2,3],[4,5,6]]);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+        [$m,$n,$k,$AA,$offA,$BB,$offB] =
             $this->translate_reduceSum($A,$axis=1,$X);
 
-        $offX = 1;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
-    }
-
-    public function testreduceSumOverflowBufferXwithIncX()
-    {
-        if($this->checkSkip('reduceSum')){return;}
-
-        $mo = new MatrixOperator();
-        $math = $this->getMath($mo);
-
-        $X = $mo->array([0,0]);
-        $A = $mo->array([[1,2,3],[4,5,6]]);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
-            $this->translate_reduceSum($A,$axis=1,$X);
-
-        $incX = 2;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $offB = 1;
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferB');
+        $math->reduceSum($m,$n,$k,$AA,$offA,$BB,$offB);
     }
 
     public function testreduceSumMinusOffsetA()
@@ -4988,31 +4969,13 @@ class Test extends TestCase
 
         $X = $mo->array([0,0]);
         $A = $mo->array([[1,2,3],[4,5,6]]);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+        [$m,$n,$k,$AA,$offA,$BB,$offB] =
             $this->translate_reduceSum($A,$axis=1,$X);
 
         $offA = -1;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Argument offsetA must be greater than equals 0.');
-        $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
-    }
-
-    public function testreduceSumMinusIncA()
-    {
-        if($this->checkSkip('reduceSum')){return;}
-
-        $mo = new MatrixOperator();
-        $math = $this->getMath($mo);
-
-        $X = $mo->array([0,0]);
-        $A = $mo->array([[1,2,3],[4,5,6]]);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
-            $this->translate_reduceSum($A,$axis=1,$X);
-
-        $ldA = 0;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Argument ldA must be greater than 0.');
-        $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Argument offsetA must be greater than or equals 0.');
+        $math->reduceSum($m,$n,$k,$AA,$offA,$BB,$offB);
     }
 
     public function testreduceSumIllegalBufferA()
@@ -5024,13 +4987,13 @@ class Test extends TestCase
 
         $X = $mo->array([0,0]);
         $A = $mo->array([[1,2,3],[4,5,6]]);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+        [$m,$n,$k,$AA,$offA,$BB,$offB] =
             $this->translate_reduceSum($A,$axis=1,$X);
 
         $AA = new \stdClass();
         $this->expectException(TypeError::class);
         $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
-        $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $math->reduceSum($m,$n,$k,$AA,$offA,$BB,$offB);
     }
 
     public function testreduceSumOverflowBufferAwithSize()
@@ -5042,13 +5005,13 @@ class Test extends TestCase
 
         $X = $mo->array([0,0]);
         $A = $mo->array([[1,2,3],[4,5,6]]);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+        [$m,$n,$k,$AA,$offA,$BB,$offB] =
             $this->translate_reduceSum($A,$axis=1,$X);
 
         $AA = $mo->array([1,2,3,4,5])->buffer();
-        $this->expectException(RuntimeException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Matrix specification too large for bufferA');
-        $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $math->reduceSum($m,$n,$k,$AA,$offA,$BB,$offB);
     }
 
     public function testreduceSumOverflowBufferXwithOffsetA()
@@ -5060,31 +5023,13 @@ class Test extends TestCase
 
         $X = $mo->array([0,0]);
         $A = $mo->array([[1,2,3],[4,5,6]]);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+        [$m,$n,$k,$AA,$offA,$BB,$offB] =
             $this->translate_reduceSum($A,$axis=1,$X);
 
         $offA = 1;
-        $this->expectException(RuntimeException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Matrix specification too large for bufferA');
-        $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
-    }
-
-    public function testreduceSumOverflowBufferXwithLdA()
-    {
-        if($this->checkSkip('reduceSum')){return;}
-
-        $mo = new MatrixOperator();
-        $math = $this->getMath($mo);
-
-        $X = $mo->array([0,0]);
-        $A = $mo->array([[10,100,1000],[10,100,1000]]);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
-            $this->translate_reduceSum($A,$axis=1,$X);
-
-        $ldA = 4;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Matrix specification too large for bufferA');
-        $math->reduceSum($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $math->reduceSum($m,$n,$k,$AA,$offA,$BB,$offB);
     }
 
     public function testsoftmax()
@@ -5365,10 +5310,10 @@ class Test extends TestCase
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([0,0]);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+        [$m,$n,$k,$AA,$offA,$BB,$offB] =
             $this->translate_reduceSum($A,$axis=1,$X);
 
-        $math->reduceMax($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $math->reduceMax($m,$n,$k,$AA,$offA,$BB,$offB);
         $this->assertEquals([3,6],$X->toArray());
     }
 
@@ -5381,10 +5326,10 @@ class Test extends TestCase
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([0,0],NDArray::float32);
-        [$trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+        [$m,$n,$k,$AA,$offA,$BB,$offB] =
             $this->translate_reduceSum($A,$axis=1,$X);
 
-        $math->reduceArgMax($trans,$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $math->reduceArgMax($m,$n,$k,$AA,$offA,$BB,$offB);
         $this->assertEquals([2,2],$X->toArray());
     }
 
