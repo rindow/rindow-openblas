@@ -2537,6 +2537,175 @@ static PHP_METHOD(Math, matrixcopy)
 /* }}} */
 
 /*
+   Method Rindow\OpenBLAS\Math::
+    public function imagecopy(
+        int $height,
+        int $width,
+        int $channels,
+        Buffer $A, int $offsetA,
+        Buffer $B, int $offsetB,
+        bool $channelsFirst,
+        int $heightShift,
+        int $widthShift,
+        bool $verticalFlip,
+        bool $horizontalFlip
+    ) : void
+ {{{ */
+static PHP_METHOD(Math, imagecopy)
+{
+    zend_long height;
+    zend_long width;
+    zend_long channels;
+    zval* a;
+    zend_long offsetA;
+    zval* b;
+    zend_long offsetB;
+    zend_bool channelsFirst;
+    zend_long heightShift;
+    zend_long widthShift;
+    zend_bool verticalFlip;
+    zend_bool horizontalFlip;
+    php_interop_polite_math_matrix_linear_buffer_t* bufferA;
+    php_interop_polite_math_matrix_linear_buffer_t* bufferB;
+    zend_long ldC,ldY,ldX;
+    zend_long directionY,directionX,biasY,biasX;
+
+    ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 12, 12)
+        Z_PARAM_LONG(height)
+        Z_PARAM_LONG(width)
+        Z_PARAM_LONG(channels)
+        Z_PARAM_OBJECT(a) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_LONG(offsetA)
+
+        Z_PARAM_OBJECT(b) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_LONG(offsetB)
+        Z_PARAM_BOOL(channelsFirst)
+        Z_PARAM_LONG(heightShift)
+        Z_PARAM_LONG(widthShift)
+
+        Z_PARAM_BOOL(verticalFlip)
+        Z_PARAM_BOOL(horizontalFlip)
+    ZEND_PARSE_PARAMETERS_END();
+
+    if(height<1) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "height must be greater then 0", 0);
+        return;
+    }
+    if(width<1) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "width must be greater then 0", 0);
+        return;
+    }
+    if(channels<1) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "channels must be greater then 0", 0);
+        return;
+    }
+    // Check Buffer A
+    bufferA = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(a);
+    if(php_rindow_openblas_assert_buffer_type(bufferA,"a")) {
+        return;
+    }
+    if(bufferA->size < height*width*channels+offsetA) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "Matrix specification too large for bufferA", 0);
+        return;
+    }
+    // Check Buffer B
+    bufferB = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(b);
+    if(php_rindow_openblas_assert_buffer_type(bufferA,"b")) {
+        return;
+    }
+    if(bufferB->size < height*width*channels+offsetB) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "Matrix specification too large for bufferB", 0);
+        return;
+    }
+
+    if(bufferA->dtype!=bufferB->dtype) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch data type A and B", 0);
+        return;
+    }
+
+    if(channelsFirst) {
+        ldC = width*height;
+        ldY = width;
+        ldX = 1;
+    } else {
+        ldY = width*channels;
+        ldX = channels;
+        ldC = 1;
+    }
+    directionY = directionX = 1;
+    biasY = biasX = 0;
+    if(verticalFlip) {
+        directionY = -directionY;
+        biasY = height-1;
+    }
+    if(horizontalFlip) {
+        directionX = -directionX;
+        biasX = width-1;
+    }
+    biasY -= heightShift*directionY;
+    biasX -= widthShift*directionX;
+
+    switch (bufferA->dtype) {
+        case php_interop_polite_math_matrix_dtype_float32:
+            {
+                float *a = &(((float *)bufferA->data)[offsetA]);
+                float *b = &(((float *)bufferB->data)[offsetB]);
+                for(zend_long y=0;y<height;y++) {
+                    for(zend_long x=0;x<width;x++) {
+                        for(zend_long c=0;c<channels;c++) {
+                            zend_long sy = y*directionY+biasY;
+                            zend_long sx = x*directionX+biasX;
+                            if(sy<0) {
+                                sy = 0;
+                            } else if(sy>=height) {
+                                sy = height-1;
+                            }
+                            if(sx<0) {
+                                sx = 0;
+                            } else if(sx>=width) {
+                                sx = width-1;
+                            }
+                            b[y*ldY+x*ldX+c*ldC] =
+                                a[sy*ldY+sx*ldX+c*ldC];
+                        }
+                    }
+                }
+            }
+            break;
+        case php_interop_polite_math_matrix_dtype_float64:
+            {
+                double *a = &(((double *)bufferA->data)[offsetA]);
+                double *b = &(((double *)bufferB->data)[offsetB]);
+                for(zend_long y=0;y<height;y++) {
+                    for(zend_long x=0;x<width;x++) {
+                        for(zend_long c=0;c<channels;c++) {
+                            zend_long sy = y*directionY+biasY;
+                            zend_long sx = x*directionX+biasX;
+                            if(sy<0) {
+                                sy = 0;
+                            } else if(sy>=height) {
+                                sy = height-1;
+                            }
+                            if(sx<0) {
+                                sx = 0;
+                            } else if(sx>=width) {
+                                sx = width-1;
+                            }
+                            b[y*ldY+x*ldX+c*ldC] =
+                                a[sy*ldY+sx*ldX+c*ldC];
+                        }
+                    }
+                }
+            }
+            break;
+        default:
+            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type of A.", 0);
+            return;
+    }
+}
+/* }}} */
+
+/*
    X(n) :=  P
 
    Method Rindow\OpenBLAS\Math::
@@ -2606,8 +2775,8 @@ static PHP_METHOD(Math, fill)
 }
 /* }}} */
 
-#include "Math_select.c"
-#include "Math_scatter.c"
+#include "Math_gather.c"
+#include "Math_repeat.c"
 #include "Math_slice.c"
 #include "Math_reduction.c"
 #include "Math_im2col1d.c"
@@ -2782,66 +2951,42 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Math_zeros, 0, 0, 4)
     ZEND_ARG_INFO(0, incX)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(ai_Math_selectAxis0, 0, 0, 13)
-    ZEND_ARG_INFO(0, m)
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_gather, 0, 0, 11)
+    ZEND_ARG_INFO(0, reverse)
+    ZEND_ARG_INFO(0, addMode)
     ZEND_ARG_INFO(0, n)
     ZEND_ARG_INFO(0, k)
-    ZEND_ARG_OBJ_INFO(0, a, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
-    ZEND_ARG_INFO(0, offsetA)
-    ZEND_ARG_INFO(0, ldA)
+    ZEND_ARG_INFO(0, numClass)
     ZEND_ARG_OBJ_INFO(0, x, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
     ZEND_ARG_INFO(0, offsetX)
-    ZEND_ARG_INFO(0, incX)
-    ZEND_ARG_OBJ_INFO(0, y, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
-    ZEND_ARG_INFO(0, offsetY)
-    ZEND_ARG_INFO(0, ldY)
-    ZEND_ARG_INFO(0, addMode)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(ai_Math_selectAxis1, 0, 0, 12)
-    ZEND_ARG_INFO(0, m)
-    ZEND_ARG_INFO(0, n)
     ZEND_ARG_OBJ_INFO(0, a, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
     ZEND_ARG_INFO(0, offsetA)
-    ZEND_ARG_INFO(0, ldA)
-    ZEND_ARG_OBJ_INFO(0, x, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
-    ZEND_ARG_INFO(0, offsetX)
-    ZEND_ARG_INFO(0, incX)
-    ZEND_ARG_OBJ_INFO(0, y, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
-    ZEND_ARG_INFO(0, offsetY)
-    ZEND_ARG_INFO(0, incY)
-    ZEND_ARG_INFO(0, addMode)
+    ZEND_ARG_OBJ_INFO(0, b, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
+    ZEND_ARG_INFO(0, offsetB)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(ai_Math_scatterAxis0, 0, 0, 13)
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_reduceGather, 0, 0, 11)
+    ZEND_ARG_INFO(0, reverse)
+    ZEND_ARG_INFO(0, addMode)
     ZEND_ARG_INFO(0, m)
     ZEND_ARG_INFO(0, n)
+    ZEND_ARG_INFO(0, numClass)
+    ZEND_ARG_OBJ_INFO(0, x, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
+    ZEND_ARG_INFO(0, offsetX)
+    ZEND_ARG_OBJ_INFO(0, a, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
+    ZEND_ARG_INFO(0, offsetA)
+    ZEND_ARG_OBJ_INFO(0, b, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
+    ZEND_ARG_INFO(0, offsetB)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_repeat, 0, 0, 7)
+    ZEND_ARG_INFO(0, m)
     ZEND_ARG_INFO(0, k)
+    ZEND_ARG_INFO(0, repeats)
     ZEND_ARG_OBJ_INFO(0, a, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
     ZEND_ARG_INFO(0, offsetA)
-    ZEND_ARG_INFO(0, ldA)
-    ZEND_ARG_OBJ_INFO(0, x, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
-    ZEND_ARG_INFO(0, offsetX)
-    ZEND_ARG_INFO(0, incX)
-    ZEND_ARG_OBJ_INFO(0, y, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
-    ZEND_ARG_INFO(0, offsetY)
-    ZEND_ARG_INFO(0, ldY)
-    ZEND_ARG_INFO(0, addMode)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(ai_Math_scatterAxis1, 0, 0, 12)
-    ZEND_ARG_INFO(0, m)
-    ZEND_ARG_INFO(0, n)
-    ZEND_ARG_OBJ_INFO(0, a, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
-    ZEND_ARG_INFO(0, offsetA)
-    ZEND_ARG_INFO(0, ldA)
-    ZEND_ARG_OBJ_INFO(0, x, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
-    ZEND_ARG_INFO(0, offsetX)
-    ZEND_ARG_INFO(0, incX)
-    ZEND_ARG_OBJ_INFO(0, y, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
-    ZEND_ARG_INFO(0, offsetY)
-    ZEND_ARG_INFO(0, incY)
-    ZEND_ARG_INFO(0, addMode)
+    ZEND_ARG_OBJ_INFO(0, b, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
+    ZEND_ARG_INFO(0, offsetB)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(ai_Math_slice, 0, 0, 18)
@@ -2949,6 +3094,21 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Math_matrixcopy, 0, 0, 10)
     ZEND_ARG_OBJ_INFO(0, b, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
     ZEND_ARG_INFO(0, offsetB)
     ZEND_ARG_INFO(0, ldB)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_imagecopy, 0, 0, 12)
+    ZEND_ARG_INFO(0, height)
+    ZEND_ARG_INFO(0, width)
+    ZEND_ARG_INFO(0, channels)
+    ZEND_ARG_OBJ_INFO(0, a, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
+    ZEND_ARG_INFO(0, offsetA)
+    ZEND_ARG_OBJ_INFO(0, b, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
+    ZEND_ARG_INFO(0, offsetB)
+    ZEND_ARG_INFO(0, channelsFirst)
+    ZEND_ARG_INFO(0, heightShift)
+    ZEND_ARG_INFO(0, widthShift)
+    ZEND_ARG_INFO(0, verticalFlip)
+    ZEND_ARG_INFO(0, horizontalFlip)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(ai_Math_fill, 0, 0, 6)
@@ -3091,16 +3251,16 @@ static zend_function_entry php_rindow_openblas_math_me[] = {
     PHP_ME(Math, log,            ai_Math_log,            ZEND_ACC_PUBLIC)
     PHP_ME(Math, tanh,           ai_Math_tanh,           ZEND_ACC_PUBLIC)
     PHP_ME(Math, zeros,          ai_Math_zeros,          ZEND_ACC_PUBLIC)
-    PHP_ME(Math, selectAxis0,    ai_Math_selectAxis0,    ZEND_ACC_PUBLIC)
-    PHP_ME(Math, selectAxis1,    ai_Math_selectAxis1,    ZEND_ACC_PUBLIC)
-    PHP_ME(Math, scatterAxis0,   ai_Math_scatterAxis0,   ZEND_ACC_PUBLIC)
-    PHP_ME(Math, scatterAxis1,   ai_Math_scatterAxis1,   ZEND_ACC_PUBLIC)
+    PHP_ME(Math, gather,         ai_Math_gather,         ZEND_ACC_PUBLIC)
+    PHP_ME(Math, reduceGather,   ai_Math_reduceGather,   ZEND_ACC_PUBLIC)
+    PHP_ME(Math, repeat,         ai_Math_repeat,         ZEND_ACC_PUBLIC)
     PHP_ME(Math, slice,          ai_Math_slice,          ZEND_ACC_PUBLIC)
     PHP_ME(Math, updateAddOnehot,ai_Math_updateAddOnehot,ZEND_ACC_PUBLIC)
     PHP_ME(Math, softmax,        ai_Math_softmax,        ZEND_ACC_PUBLIC)
     PHP_ME(Math, equal,          ai_Math_equal,          ZEND_ACC_PUBLIC)
     PHP_ME(Math, astype,         ai_Math_astype,         ZEND_ACC_PUBLIC)
     PHP_ME(Math, matrixcopy,     ai_Math_matrixcopy,     ZEND_ACC_PUBLIC)
+    PHP_ME(Math, imagecopy,      ai_Math_imagecopy,      ZEND_ACC_PUBLIC)
     PHP_ME(Math, fill,           ai_Math_fill,           ZEND_ACC_PUBLIC)
     PHP_ME(Math, reduceSum,      ai_Math_reduceSum,      ZEND_ACC_PUBLIC)
     PHP_ME(Math, reduceMax,      ai_Math_reduceMax,      ZEND_ACC_PUBLIC)
