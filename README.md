@@ -13,7 +13,7 @@ Very useful when you want to do deep learning with PHP!
 Requirements
 ============
 
-- PHP7.2 or PHP7.3 or PHP7.4 or PHP8.0
+- PHP7.2 or PHP7.3 or PHP7.4 or PHP8.0 or PHP8.1
 - Linux or Windows 10
 - OpenBLAS
 
