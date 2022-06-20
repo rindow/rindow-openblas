@@ -32,15 +32,15 @@ static PHP_METHOD(Math, reduceSum)
     ZEND_PARSE_PARAMETERS_END();
 
     if(php_rindow_openblas_assert_shape_parameter(
-        PHP_RINDOW_OPENBLAS_ASSERT_M, m)) {
+        "m", m)) {
         return;
     }
     if(php_rindow_openblas_assert_shape_parameter(
-        PHP_RINDOW_OPENBLAS_ASSERT_N, n)) {
+        "n", n)) {
         return;
     }
     if(php_rindow_openblas_assert_shape_parameter(
-        PHP_RINDOW_OPENBLAS_ASSERT_K, k)) {
+        "k", k)) {
         return;
     }
     // Check Buffer A
@@ -149,15 +149,15 @@ static PHP_METHOD(Math, reduceMax)
     ZEND_PARSE_PARAMETERS_END();
 
     if(php_rindow_openblas_assert_shape_parameter(
-        PHP_RINDOW_OPENBLAS_ASSERT_M, m)) {
+        "m", m)) {
         return;
     }
     if(php_rindow_openblas_assert_shape_parameter(
-        PHP_RINDOW_OPENBLAS_ASSERT_N, n)) {
+        "n", n)) {
         return;
     }
     if(php_rindow_openblas_assert_shape_parameter(
-        PHP_RINDOW_OPENBLAS_ASSERT_K, k)) {
+        "k", k)) {
         return;
     }
     // Check Buffer A
@@ -266,15 +266,15 @@ static PHP_METHOD(Math, reduceArgMax)
     ZEND_PARSE_PARAMETERS_END();
 
     if(php_rindow_openblas_assert_shape_parameter(
-        PHP_RINDOW_OPENBLAS_ASSERT_M, m)) {
+        "m", m)) {
         return;
     }
     if(php_rindow_openblas_assert_shape_parameter(
-        PHP_RINDOW_OPENBLAS_ASSERT_N, n)) {
+        "n", n)) {
         return;
     }
     if(php_rindow_openblas_assert_shape_parameter(
-        PHP_RINDOW_OPENBLAS_ASSERT_K, k)) {
+        "k", k)) {
         return;
     }
     // Check Buffer A

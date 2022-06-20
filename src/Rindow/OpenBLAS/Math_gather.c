@@ -45,11 +45,11 @@ static PHP_METHOD(Math, gather)
     ZEND_PARSE_PARAMETERS_END();
 
     if(php_rindow_openblas_assert_shape_parameter(
-        PHP_RINDOW_OPENBLAS_ASSERT_N, n)) {
+        "n", n)) {
         return;
     }
     if(php_rindow_openblas_assert_shape_parameter(
-        PHP_RINDOW_OPENBLAS_ASSERT_K, k)) {
+        "k", k)) {
         return;
     }
     if(numClass<=0) {
@@ -62,6 +62,10 @@ static PHP_METHOD(Math, gather)
     if(php_rindow_openblas_assert_buffer_type(bufferX,"x")) {
         return;
     }
+    if(offsetX<0) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "Argument offsetX must be greater than or equal 0.", 0);
+        return;
+    }
     if(offsetX+n > bufferX->size) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "Matrix X specification too large for buffer.", 0);
         return;
@@ -72,6 +76,10 @@ static PHP_METHOD(Math, gather)
     if(php_rindow_openblas_assert_buffer_type(bufferA,"a")) {
         return;
     }
+    if(offsetA<0) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "Argument offsetA must be greater than or equal 0.", 0);
+        return;
+    }
     if(offsetA+numClass*k > bufferA->size) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "Matrix A specification too large for buffer.", 0);
         return;
@@ -80,6 +88,10 @@ static PHP_METHOD(Math, gather)
     // Check Buffer B
     bufferB = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(b);
     if(php_rindow_openblas_assert_buffer_type(bufferB,"b")) {
+        return;
+    }
+    if(offsetB<0) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "Argument offsetB must be greater than or equal 0.", 0);
         return;
     }
     if(offsetB+n*k > bufferB->size) {
@@ -310,11 +322,11 @@ static PHP_METHOD(Math, reduceGather)
     ZEND_PARSE_PARAMETERS_END();
 
     if(php_rindow_openblas_assert_shape_parameter(
-        PHP_RINDOW_OPENBLAS_ASSERT_M, m)) {
+        "m", m)) {
         return;
     }
     if(php_rindow_openblas_assert_shape_parameter(
-        PHP_RINDOW_OPENBLAS_ASSERT_N, n)) {
+        "n", n)) {
         return;
     }
     if(numClass<=0) {
@@ -326,7 +338,11 @@ static PHP_METHOD(Math, reduceGather)
     if(php_rindow_openblas_assert_buffer_type(bufferX,"x")) {
         return;
     }
-    if(offsetX+n > bufferX->size) {
+    if(offsetX<0) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "Argument offsetX must be greater than or equal 0.", 0);
+        return;
+    }
+    if(offsetX+m*n > bufferX->size) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "Matrix X specification too large for buffer.", 0);
         return;
     }
@@ -334,6 +350,10 @@ static PHP_METHOD(Math, reduceGather)
     // Check Buffer A
     bufferA = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(a);
     if(php_rindow_openblas_assert_buffer_type(bufferA,"a")) {
+        return;
+    }
+    if(offsetA<0) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "Argument offsetA must be greater than or equal 0.", 0);
         return;
     }
     if(offsetA+m*numClass > bufferA->size) {
@@ -344,6 +364,10 @@ static PHP_METHOD(Math, reduceGather)
     // Check Buffer B
     bufferB = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(b);
     if(php_rindow_openblas_assert_buffer_type(bufferB,"b")) {
+        return;
+    }
+    if(offsetB<0) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "Argument offsetB must be greater than or equal 0.", 0);
         return;
     }
     if(offsetB+m*n > bufferB->size) {

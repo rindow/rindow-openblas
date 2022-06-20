@@ -43,6 +43,28 @@ class Test extends TestCase
         return $a;
     }
 
+    protected function printableShapes($values)
+    {
+        if(!is_array($values)) {
+            if($values instanceof NDArray)
+                return '('.implode(',',$values->shape()).')';
+            if(is_object($values))
+                return '"'.get_class($values).'"';
+            if(is_numeric($values) || is_string($values))
+                return strval($values);
+            return gettype($values);
+        }
+        $string = '[';
+        foreach($values as $value) {
+            if($string!='[') {
+                $string .= ',';
+            }
+            $string .= $this->printableShapes($value);
+        }
+        $string .= ']';
+        return $string;
+    }
+
     public function translate_amin(
         NDArray $X) : array
     {
@@ -70,15 +92,17 @@ class Test extends TestCase
     }
 
     public function translate_maximum(
-        float $alpha,
-        NDArray $X
+        NDArray $A,
+        NDArray $X,
         ) : array
     {
-        $n = $X->size();
+        [$m,$n] = $A->shape();
+        $AA = $A->buffer();
+        $offA = $A->offset();
         $XX = $X->buffer();
         $offX = $X->offset();
 
-        return [$n,$alpha,$XX,$offX,1];
+        return [$m,$n,$AA,$offA,$n,$XX,$offX,1];
     }
 
     public function translate_multiply(
@@ -223,7 +247,7 @@ class Test extends TestCase
             $XX,$offX,1
         ];
     }
-
+/*
     public function translate_selectAxis0(
         NDArray $A,
         NDArray $X,
@@ -324,6 +348,196 @@ class Test extends TestCase
             $YY,$offY,1,
         ];
     }
+*/
+    public function translate_gather(
+        bool $scatterAdd,
+        NDArray $A,
+        NDArray $X,
+        int $axis=null,
+        NDArray $B=null,
+        $dtype=null) : array
+    {
+//echo "shapeX=[".implode(',',$X->shape())."],shapeA=[".implode(',',$A->shape())."]\n";
+        if($axis===null) {
+            $postfixShape = $A->shape();
+            $prefixShape = $X->shape();
+            $numClass = array_shift($postfixShape);
+            $m = 1;
+            $n = array_product($prefixShape);
+            $k = array_product($postfixShape);
+            $reductionDims = false;
+            $outputShape = array_merge($prefixShape,$postfixShape);
+        } else {
+            $ndim = $A->ndim();
+            $orgAxis = $axis;
+            if($axis<0) {
+                $axis = $ndim+$axis;
+            }
+            $postfixShape = $A->shape();
+            $prefixShape = [];
+            for($i=0;$i<$axis;$i++) {
+                $prefixShape[] = array_shift($postfixShape);
+            }
+            $numClass = array_shift($postfixShape);
+            $m = array_product($prefixShape);
+            $n = array_product($postfixShape);
+            $k = 1;
+            $reductionDims = true;
+            $outputShape = array_merge($prefixShape,$postfixShape);
+            if($X->shape()!=$outputShape) {
+                throw new InvalidArgumentException('Unmatch Shape:'.
+                                        $this->printableShapes([$A,$X]));
+            }
+        }
+//echo "outputShape=[".implode(',',$outputShape)."]\n";
+        if($dtype===null) {
+            $dtype = $A->dtype();
+        }
+        if($B==null) {
+            $B = $this->alloc($outputShape,$dtype);
+            $this->zeros($B);
+        } else {
+            if($B->shape()!=$outputShape) {
+                throw new InvalidArgumentException("Unmatch output shape of dimension: ".
+                                            $this->printableShapes([$outputShape,$B]));
+            }
+        }
+
+        $AA = $A->buffer();
+        $offA = $A->offset();
+        $XX = $X->buffer();
+        $offX = $X->offset();
+        $BB = $B->buffer();
+        $offB = $B->offset();
+
+        if($scatterAdd) {
+            $reverse=true;
+            $addMode=true;
+        } else {
+            $reverse=false;
+            $addMode=false;
+        }
+        if($reductionDims) {
+            return [ $reduce=true,
+                $reverse,
+                $addMode,
+                $m,
+                $n,
+                $numClass,
+                $XX,$offX,
+                $AA,$offA,
+                $BB,$offB];
+        } else {
+            return [ $reduce=false,
+                $reverse,
+                $addMode,
+                $n,
+                $k,
+                $numClass,
+                $XX,$offX,
+                $AA,$offA,
+                $BB,$offB];
+        }
+    }
+
+    public function translate_scatter(
+        NDArray $X,
+        NDArray $A,
+        int $numClass,
+        int $axis=null,
+        NDArray $B=null,
+        $dtype=null) : array
+    {
+//echo "shapeX=[".implode(',',$X->shape())."],shapeA=[".implode(',',$A->shape())."]\n";
+//echo "axis=$axis,numClass=$numClass\n";
+        if($axis===null) {
+            $postfixShape = $A->shape();
+            $prefixShape = $X->shape();
+            //$numClass
+            $ndimX = $X->ndim();
+            $tmpShape = [];
+            for($i=0;$i<$ndimX;$i++) {
+                $tmpShape[] = array_shift($postfixShape);
+            }
+            if($tmpShape!=$prefixShape) {
+                throw new InvalidArgumentException('Unmatch Shape:'.
+                                        $this->printableShapes([$X,$A]));
+            }
+            $n = array_product($prefixShape);
+            $k = array_product($postfixShape);
+            $m = 1;
+            $expandDims = false;
+            $outputShape = array_merge([$numClass],$postfixShape);
+        } else {
+            $ndim = $A->ndim();
+            $orgAxis = $axis;
+            if($axis<0) {
+                $axis = $ndim+$axis;
+            }
+            //if($axis<0 || $axis>$ndim-1) {
+            //    throw new InvalidArgumentException("Invalid axis: ".$orgAxis);
+            //}
+            $postfixShape = $A->shape();
+            $postfixX = $X->shape();
+            if($postfixShape!=$postfixX) {
+                throw new InvalidArgumentException('Unmatch Shape:'.
+                                        $this->printableShapes([$X,$A]));
+            }
+            $prefixShape = [];
+            for($i=0;$i<$axis;$i++) {
+                $prefixShape[] = array_shift($postfixShape);
+                array_shift($postfixX);
+            }
+            $m = array_product($prefixShape);
+            $n = array_product($postfixShape);
+            $k = 1;
+            $expandDims = true;
+            $outputShape = array_merge($prefixShape,[$numClass],$postfixShape);
+        }
+//echo "outputShape=[".implode(',',$outputShape)."]\n";
+        if($dtype===null) {
+            $dtype = $A->dtype();
+        }
+        if($B==null) {
+            $B = $this->alloc($outputShape,$dtype);
+            $this->zeros($B);
+        } else {
+            if($B->shape()!=$outputShape) {
+                $shapeError = '('.implode(',',$A->shape()).'),('.implode(',',$B->shape()).')';
+                throw new InvalidArgumentException("Unmatch shape of dimension: ".$shapeError);
+            }
+        }
+
+        $AA = $A->buffer();
+        $offA = $A->offset();
+        $XX = $X->buffer();
+        $offX = $X->offset();
+        $BB = $B->buffer();
+        $offB = $B->offset();
+
+        if($expandDims) {
+            return [ $reduce=true,
+                $reverse=true,
+                $addMode=false,
+                $m,
+                $n,
+                $numClass,
+                $XX,$offX,
+                $BB,$offB,
+                $AA,$offA];
+
+        } else {
+            return [ $reduce=false,
+                $reverse=true,
+                $addMode=false,
+                $n,
+                $k,
+                $numClass,
+                $XX,$offX,
+                $BB,$offB,
+                $AA,$offA];
+        }
+    }
 
     public function translate_onehot(
         NDArray $X,
@@ -422,6 +636,89 @@ class Test extends TestCase
            $n,
            $dtype,
            $XX,$offX,1,
+           $YY,$offY,1
+       ];
+   }
+
+   public function translate_searchsorted(
+       NDArray $A,
+       NDArray $X,
+       bool $right=null,
+       $dtype=null,
+       NDArray $Y=null
+       ) : array
+   {
+       if($A->ndim()!=1) {
+           throw new InvalidArgumentException('A must be 1D NDArray.');
+       }
+       if($right===null) {
+           $right = false;
+       }
+       if($dtype===null) {
+           $dtype = NDArray::uint32;
+       }
+       if($Y===null) {
+           $Y = $this->alloc($X->shape(),$dtype);
+       }
+       $dtype = $Y->dtype();
+       if($dtype!=NDArray::uint32&&$dtype!=NDArray::int32&&
+           $dtype!=NDArray::uint64&&$dtype!=NDArray::int64) {
+           throw new InvalidArgumentException('dtype of Y must be int32 or int64');
+       }
+       if($X->shape()!=$Y->shape()) {
+           $shapeError = '('.implode(',',$X->shape()).'),('.implode(',',$Y->shape()).')';
+           throw new InvalidArgumentException("Unmatch shape of dimension: ".$shapeError);
+       }
+       $m = $A->size();
+       $AA = $A->buffer();
+       $offA = $A->offset();
+       $n = $X->size();
+       $XX = $X->buffer();
+       $offX = $X->offset();
+       $YY = $Y->buffer();
+       $offY = $Y->offset();
+
+       return [
+           $m,
+           $AA,$offA,1,
+           $n,
+           $XX,$offX,1,
+           $right,
+           $YY,$offY,1
+       ];
+   }
+
+   public function translate_cumsum(
+       NDArray $X,
+       bool $exclusive=null,
+       bool $reverse=null,
+       NDArray $Y=null
+       ) : array
+   {
+       if($exclusive===null) {
+           $exclusive = false;
+       }
+       if($reverse===null) {
+           $reverse = false;
+       }
+       if($Y===null) {
+           $Y = $this->alloc($X->shape(),$X->dtype());
+       }
+       if($X->shape()!=$Y->shape()) {
+           $shapeError = '('.implode(',',$X->shape()).'),('.implode(',',$Y->shape()).')';
+           throw new InvalidArgumentException("Unmatch shape of dimension: ".$shapeError);
+       }
+       $n = $X->size();
+       $XX = $X->buffer();
+       $offX = $X->offset();
+       $YY = $Y->buffer();
+       $offY = $Y->offset();
+
+       return [
+           $n,
+           $XX,$offX,1,
+           $exclusive,
+           $reverse,
            $YY,$offY,1
        ];
    }
@@ -996,14 +1293,21 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([3,2,0]);
+        $X = $mo->array([4,2,0]);
         [$N,$alpha,$XX,$offX,$incX,$beta] =
-            $this->translate_increment($X,0,0);
+            $this->translate_increment($X,$beta=0,$alpha=1);
 
         // X := 1 / ( alpha * X + beta )
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Zero divide.');
+
+        // *** CAUTION ***
+        // disable checking for INFINITY values
+        //$this->expectException(RuntimeException::class);
+        //$this->expectExceptionMessage('Zero divide.');
+
         $math->reciprocal($N,$alpha,$XX,$offX,$incX,$beta);
+        $this->assertEquals(
+            [0.25,0.5,INF],
+            $X->toArray());
     }
 
     public function testReciprocalMinusN()
@@ -1116,12 +1420,29 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
-        $math->maximum($N,$alpha,$XX,$offX,$incX);
-        $this->assertEquals([2,2,3],$X->toArray());
+        $math->maximum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $this->assertEquals([[2,3],[2,3],[3,4]],$A->toArray());
+    }
+
+    public function testMaximumMinusM()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $M = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument m must be greater than 0.');
+        $math->maximum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testMaximumMinusN()
@@ -1129,14 +1450,111 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $N = 0;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument n must be greater than 0.');
-        $math->maximum($N,$alpha,$XX,$offX,$incX);
+        $math->maximum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testMaximumMinusOffsetA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $offA = -1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument offsetA must be greater than equals 0.');
+        $math->maximum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testMaximumMinusLdA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $ldA = -1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument ldA must be greater than 0.');
+        $math->maximum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testMaximumIllegalBufferA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $AA = new \stdClass();
+        $this->expectException(TypeError::class);
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
+        $math->maximum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testMaximumOverflowBufferAwithSize()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $AA = $mo->array([1,2,2,3,3])->buffer();
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferA');
+        $math->maximum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testMaximumOverflowBufferXwithOffsetA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $offA = 1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferA');
+        $math->maximum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testMaximumOverflowBufferXwithLdA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $ldA = 3;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferA');
+        $math->maximum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testMaximumMinusOffsetX()
@@ -1144,14 +1562,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $offX = -1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument offsetX must be greater than equals 0.');
-        $math->maximum($N,$alpha,$XX,$offX,$incX);
+        $math->maximum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testMaximumMinusIncX()
@@ -1159,14 +1578,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $incX = -1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument incX must be greater than 0.');
-        $math->maximum($N,$alpha,$XX,$offX,$incX);
+        $math->maximum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testMaximumIllegalBufferX()
@@ -1174,14 +1594,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
         $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
-        $math->maximum($N,$alpha,$XX,$offX,$incX);
+        $math->maximum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testMaximumOverflowBufferXwithSize()
@@ -1189,14 +1610,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
-        $XX = $mo->array([1,2])->buffer();
+        $XX = $mo->array([1])->buffer();
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->maximum($N,$alpha,$XX,$offX,$incX);
+        $math->maximum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testMaximumOverflowBufferXwithOffsetX()
@@ -1204,14 +1626,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $offX = 1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->maximum($N,$alpha,$XX,$offX,$incX);
+        $math->maximum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testMaximumOverflowBufferXwithIncX()
@@ -1219,14 +1642,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $incX = 2;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->maximum($N,$alpha,$XX,$offX,$incX);
+        $math->maximum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testMinimumNormal()
@@ -1234,12 +1658,29 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
-        $math->minimum($N,$alpha,$XX,$offX,$incX);
-        $this->assertEquals([1,2,2],$X->toArray());
+        $math->minimum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $this->assertEquals([[1,2],[2,3],[2,3]],$A->toArray());
+    }
+
+    public function testMinimumMinusM()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $M = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument m must be greater than 0.');
+        $math->minimum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testMinimumMinusN()
@@ -1247,14 +1688,111 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $N = 0;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument n must be greater than 0.');
-        $math->minimum($N,$alpha,$XX,$offX,$incX);
+        $math->minimum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testMinimumMinusOffsetA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $offA = -1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument offsetA must be greater than equals 0.');
+        $math->minimum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testMinimumMinusLdA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $ldA = -1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument ldA must be greater than 0.');
+        $math->minimum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testMinimumIllegalBufferA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $AA = new \stdClass();
+        $this->expectException(TypeError::class);
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
+        $math->minimum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testMinimumOverflowBufferAwithSize()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $AA = $mo->array([1,2,2,3,3])->buffer();
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferA');
+        $math->minimum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testMinimumOverflowBufferXwithOffsetA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $offA = 1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferA');
+        $math->minimum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testMinimumOverflowBufferXwithLdA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $ldA = 3;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferA');
+        $math->minimum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testMinimumMinusOffsetX()
@@ -1262,14 +1800,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $offX = -1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument offsetX must be greater than equals 0.');
-        $math->minimum($N,$alpha,$XX,$offX,$incX);
+        $math->minimum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testMinimumMinusIncX()
@@ -1277,14 +1816,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $incX = -1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument incX must be greater than 0.');
-        $math->minimum($N,$alpha,$XX,$offX,$incX);
+        $math->minimum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testMinimumIllegalBufferX()
@@ -1292,14 +1832,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
         $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
-        $math->minimum($N,$alpha,$XX,$offX,$incX);
+        $math->minimum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testMinimumOverflowBufferXwithSize()
@@ -1307,14 +1848,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
-        $XX = $mo->array([1,2])->buffer();
+        $XX = $mo->array([1])->buffer();
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->minimum($N,$alpha,$XX,$offX,$incX);
+        $math->minimum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testMinimumOverflowBufferXwithOffsetX()
@@ -1322,14 +1864,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $offX = 1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->minimum($N,$alpha,$XX,$offX,$incX);
+        $math->minimum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testMinimumOverflowBufferXwithIncX()
@@ -1337,27 +1880,45 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $incX = 2;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->minimum($N,$alpha,$XX,$offX,$incX);
+        $math->minimum($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
-
+    
     public function testGreaterNormal()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
-        $math->greater($N,$alpha,$XX,$offX,$incX);
-        $this->assertEquals([0,0,1],$X->toArray());
+        $math->greater($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $this->assertEquals([[0,0],[0,0],[1,1]],$A->toArray());
+    }
+
+    public function testGreaterMinusM()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $M = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument m must be greater than 0.');
+        $math->greater($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testGreaterMinusN()
@@ -1365,14 +1926,111 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $N = 0;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument n must be greater than 0.');
-        $math->greater($N,$alpha,$XX,$offX,$incX);
+        $math->greater($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testGreaterMinusOffsetA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $offA = -1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument offsetA must be greater than equals 0.');
+        $math->greater($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testGreaterMinusLdA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $ldA = -1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument ldA must be greater than 0.');
+        $math->greater($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testGreaterIllegalBufferA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $AA = new \stdClass();
+        $this->expectException(TypeError::class);
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
+        $math->greater($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testGreaterOverflowBufferAwithSize()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $AA = $mo->array([1,2,2,3,3])->buffer();
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferA');
+        $math->greater($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testGreaterOverflowBufferXwithOffsetA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $offA = 1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferA');
+        $math->greater($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testGreaterOverflowBufferXwithLdA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $ldA = 3;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferA');
+        $math->greater($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testGreaterMinusOffsetX()
@@ -1380,14 +2038,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $offX = -1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument offsetX must be greater than equals 0.');
-        $math->greater($N,$alpha,$XX,$offX,$incX);
+        $math->greater($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testGreaterMinusIncX()
@@ -1395,14 +2054,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $incX = -1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument incX must be greater than 0.');
-        $math->greater($N,$alpha,$XX,$offX,$incX);
+        $math->greater($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testGreaterIllegalBufferX()
@@ -1410,14 +2070,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
         $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
-        $math->greater($N,$alpha,$XX,$offX,$incX);
+        $math->greater($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testGreaterOverflowBufferXwithSize()
@@ -1425,14 +2086,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
-        $XX = $mo->array([1,2])->buffer();
+        $XX = $mo->array([1])->buffer();
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->greater($N,$alpha,$XX,$offX,$incX);
+        $math->greater($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testGreaterOverflowBufferXwithOffsetX()
@@ -1440,14 +2102,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $offX = 1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->greater($N,$alpha,$XX,$offX,$incX);
+        $math->greater($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testGreaterOverflowBufferXwithIncX()
@@ -1455,14 +2118,29 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $incX = 2;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->greater($N,$alpha,$XX,$offX,$incX);
+        $math->greater($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testGreaterEqualNormal()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $math->greaterEqual($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $this->assertEquals([[0,0],[1,1],[1,1]],$A->toArray());
     }
 
     public function testLessNormal()
@@ -1470,12 +2148,29 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
-        $math->less($N,$alpha,$XX,$offX,$incX);
-        $this->assertEquals([1,0,0],$X->toArray());
+        $math->less($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $this->assertEquals([[1,1],[0,0],[0,0]],$A->toArray());
+    }
+
+    public function testLessMinusM()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $M = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument m must be greater than 0.');
+        $math->less($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testLessMinusN()
@@ -1483,14 +2178,111 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $N = 0;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument n must be greater than 0.');
-        $math->less($N,$alpha,$XX,$offX,$incX);
+        $math->less($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testLessMinusOffsetA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $offA = -1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument offsetA must be greater than equals 0.');
+        $math->less($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testLessMinusLdA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $ldA = -1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument ldA must be greater than 0.');
+        $math->less($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testLessIllegalBufferA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $AA = new \stdClass();
+        $this->expectException(TypeError::class);
+        $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
+        $math->less($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testLessOverflowBufferAwithSize()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $AA = $mo->array([1,2,2,3,3])->buffer();
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferA');
+        $math->less($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testLessOverflowBufferXwithOffsetA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $offA = 1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferA');
+        $math->less($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testLessOverflowBufferXwithLdA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $ldA = 3;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Matrix specification too large for bufferA');
+        $math->less($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testLessMinusOffsetX()
@@ -1498,14 +2290,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $offX = -1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument offsetX must be greater than equals 0.');
-        $math->less($N,$alpha,$XX,$offX,$incX);
+        $math->less($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testLessMinusIncX()
@@ -1513,14 +2306,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $incX = -1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument incX must be greater than 0.');
-        $math->less($N,$alpha,$XX,$offX,$incX);
+        $math->less($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testLessIllegalBufferX()
@@ -1528,14 +2322,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
         $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
-        $math->less($N,$alpha,$XX,$offX,$incX);
+        $math->less($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testLessOverflowBufferXwithSize()
@@ -1543,14 +2338,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
-        $XX = $mo->array([1,2])->buffer();
+        $XX = $mo->array([1])->buffer();
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->less($N,$alpha,$XX,$offX,$incX);
+        $math->less($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testLessOverflowBufferXwithOffsetX()
@@ -1558,14 +2354,15 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $offX = 1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->less($N,$alpha,$XX,$offX,$incX);
+        $math->less($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
     }
 
     public function testLessOverflowBufferXwithIncX()
@@ -1573,14 +2370,29 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
 
         $incX = 2;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->less($N,$alpha,$XX,$offX,$incX);
+        $math->less($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+    }
+
+    public function testLessEqualNormal()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2],[2,3],[3,4]]);
+        $X = $mo->array([2,3]);
+        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX] =
+            $this->translate_maximum($A,$X);
+
+        $math->lessEqual($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX);
+        $this->assertEquals([[1,1],[1,1],[0,0]],$A->toArray());
     }
 
     public function testMultiplySameSizeNormal()
@@ -2623,9 +3435,15 @@ class Test extends TestCase
         [$N,$XX,$offX,$incX] =
             $this->translate_square($X);
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Invalid value in sqrt.');
+        // *** CAUTION ***
+        // disable checking for INFINITY values
+        //$this->expectException(RuntimeException::class);
+        //$this->expectExceptionMessage('Invalid value in sqrt.');
+
         $math->sqrt($N,$XX,$offX,$incX);
+        $this->assertEquals(1.0, $X[0]);
+        $this->assertEquals(2.0, $X[1]);
+        $this->assertTrue(is_nan($X[2])); // -NAN
     }
 
     public function testsqrtMinusN()
@@ -2758,14 +3576,21 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([3,2,0]);
+        $X = $mo->array([4,1,0]);
         [$N,$alpha,$XX,$offX,$incX,$beta] =
-            $this->translate_increment($X,0,0);
+            $this->translate_increment($X,$beta=0,$alpha=1);
 
         // X := 1 / (a * sqrt(X) + b)
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Zero divide.');
+
+        // *** CAUTION ***
+        // disable checking for INFINITY values
+        //$this->expectException(RuntimeException::class);
+        //$this->expectExceptionMessage('Zero divide.');
+
         $math->rsqrt($N,$alpha,$XX,$offX,$incX,$beta);
+        $this->assertEquals(
+            [0.5, 1.0, INF],
+            $X->toArray());
     }
 
     public function testrsqrtInvalidSqrt()
@@ -2773,14 +3598,20 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([3,2,-1]);
+        $X = $mo->array([4,1,-1]);
         [$N,$alpha,$XX,$offX,$incX,$beta] =
-            $this->translate_increment($X,1,1);
+            $this->translate_increment($X,0,1);
 
         // X := 1 / (a * sqrt(X) + b)
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Invalid value in sqrt.');
+        // *** CAUTION ***
+        // disable checking for INFINITY values
+        //$this->expectException(RuntimeException::class);
+        //$this->expectExceptionMessage('Invalid value in sqrt.');
+
         $math->rsqrt($N,$alpha,$XX,$offX,$incX,$beta);
+        $this->assertEquals(0.5, $X[0]);
+        $this->assertEquals(1.0, $X[1]);
+        $this->assertTrue(is_nan($X[2]));
     }
 
     public function testrsqrtMinusN()
@@ -2894,10 +3725,10 @@ class Test extends TestCase
         $math = $this->getMath($mo);
 
         $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        [$N,$XX,$offX,$incX,$alpha] =
+            $this->translate_maximum($X,2);
 
-        $math->pow($N,$alpha,$XX,$offX,$incX);
+        $math->pow($N,$XX,$offX,$incX,$alpha);
         $this->assertEquals([1,4,9],$X->toArray());
     }
 
@@ -2907,13 +3738,13 @@ class Test extends TestCase
         $math = $this->getMath($mo);
 
         $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        [$N,$XX,$offX,$incX,$alpha] =
+            $this->translate_maximum($X,2);
 
         $N = 0;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument n must be greater than 0.');
-        $math->pow($N,$alpha,$XX,$offX,$incX);
+        $math->pow($N,$XX,$offX,$incX,$alpha);
     }
 
     public function testpowMinusOffsetX()
@@ -2922,13 +3753,13 @@ class Test extends TestCase
         $math = $this->getMath($mo);
 
         $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        [$N,$XX,$offX,$incX,$alpha] =
+            $this->translate_maximum($X,2);
 
         $offX = -1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument offsetX must be greater than equals 0.');
-        $math->pow($N,$alpha,$XX,$offX,$incX);
+        $math->pow($N,$XX,$offX,$incX,$alpha);
     }
 
     public function testpowMinusIncX()
@@ -2937,13 +3768,13 @@ class Test extends TestCase
         $math = $this->getMath($mo);
 
         $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        [$N,$XX,$offX,$incX,$alpha] =
+            $this->translate_maximum($X,2);
 
         $incX = -1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument incX must be greater than 0.');
-        $math->pow($N,$alpha,$XX,$offX,$incX);
+        $math->pow($N,$XX,$offX,$incX,$alpha);
     }
 
     public function testpowIllegalBufferX()
@@ -2952,13 +3783,13 @@ class Test extends TestCase
         $math = $this->getMath($mo);
 
         $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        [$N,$XX,$offX,$incX,$alpha] =
+            $this->translate_maximum($X,2);
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
         $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
-        $math->pow($N,$alpha,$XX,$offX,$incX);
+        $math->pow($N,$XX,$offX,$incX,$alpha);
     }
 
     public function testpowOverflowBufferXwithSize()
@@ -2967,13 +3798,13 @@ class Test extends TestCase
         $math = $this->getMath($mo);
 
         $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        [$N,$XX,$offX,$incX,$alpha] =
+            $this->translate_maximum($X,2);
 
         $XX = $mo->array([1,2])->buffer();
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->pow($N,$alpha,$XX,$offX,$incX);
+        $math->pow($N,$XX,$offX,$incX,$alpha);
     }
 
     public function testpowOverflowBufferXwithOffsetX()
@@ -2982,13 +3813,13 @@ class Test extends TestCase
         $math = $this->getMath($mo);
 
         $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        [$N,$XX,$offX,$incX,$alpha] =
+            $this->translate_maximum($X,2);
 
         $offX = 1;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->pow($N,$alpha,$XX,$offX,$incX);
+        $math->pow($N,$XX,$offX,$incX,$alpha);
     }
 
     public function testpowOverflowBufferXwithIncX()
@@ -2997,13 +3828,13 @@ class Test extends TestCase
         $math = $this->getMath($mo);
 
         $X = $mo->array([1,2,3]);
-        [$N,$alpha,$XX,$offX,$incX] =
-            $this->translate_maximum(2,$X);
+        [$N,$XX,$offX,$incX,$alpha] =
+            $this->translate_maximum($X,2);
 
         $incX = 2;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->pow($N,$alpha,$XX,$offX,$incX);
+        $math->pow($N,$XX,$offX,$incX,$alpha);
     }
 
     public function testexpNormal()
@@ -3146,13 +3977,19 @@ class Test extends TestCase
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
-        $X = $mo->array([1,2,0]);
+        $X = $mo->array([1,0,-1]);
         [$N,$XX,$offX,$incX] =
             $this->translate_square($X);
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Invalid value in log.');
+        // *** CAUTION ***
+        // disable checking for INFINITY values
+        //$this->expectException(RuntimeException::class);
+        //$this->expectExceptionMessage('Invalid value in log.');
+
         $math->log($N,$XX,$offX,$incX);
+        $this->assertEquals(0.0,  $X[0]);
+        $this->assertEquals(-INF, $X[1]);
+        $this->assertTrue(is_nan($X[2]));
     }
 
     public function testlogMinusN()
@@ -3259,6 +4096,682 @@ class Test extends TestCase
         $this->expectExceptionMessage('Vector specification too large for bufferX');
         $math->log($N,$XX,$offX,$incX);
     }
+
+    public function testnan2numNormal()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([NAN,2,4,NAN]);
+        [$N,$XX,$offX,$incX,$alpha] =
+            $this->translate_maximum($X,0.0);
+        $math->nan2num($N,$XX,$offX,$incX,$alpha);
+        $this->assertEquals([0,2,4,0],$X->toArray());
+
+        $X = $mo->array([NAN,2,4,NAN]);
+        [$N,$XX,$offX,$incX,$alpha] =
+            $this->translate_maximum($X,1.0);
+        $math->nan2num($N,$XX,$offX,$incX,$alpha);
+        $this->assertEquals([1,2,4,1],$X->toArray());
+    }
+
+    public function testisnanNormal()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([NAN,2,4,NAN]);
+        [$N,$XX,$offX,$incX] =
+            $this->translate_square($X);
+
+        $math->isnan($N,$XX,$offX,$incX);
+
+        $this->assertEquals([1,0,0,1],$X->toArray());
+    }
+
+    public function testsearchsortedNormal()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+        $this->assertEquals([0,1,1,3],$Y->toArray());
+
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,true,$YY,$offsetY,$incY);
+        $this->assertEquals([0,1,2,3],$Y->toArray());
+    }
+
+    public function testsearchsortedMinusM()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $m = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument m must be greater than 0.');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedMinusOffsetA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $offsetA = -1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument offsetA must be greater than equals 0.');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedMinusIncA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $incA = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument incA must be greater than 0.');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedIllegalBufferA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $AA = new \stdClass();
+        $this->expectException(TypeError::class);
+        $this->expectExceptionMessage('A must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedOverflowBufferAwithSize()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $AA = $mo->array([1,2])->buffer();
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferA');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedOverflowBufferAwithOffsetA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $offsetA = 1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferA');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedOverflowBufferAwithIncA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $incA = 2;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferA');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedMinusN()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $n = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument n must be greater than 0.');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedMinusOffsetX()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $offsetX = -1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument offsetX must be greater than equals 0.');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedMinusIncX()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $incX = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument incX must be greater than 0.');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedIllegalBufferX()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $XX = new \stdClass();
+        $this->expectException(TypeError::class);
+        $this->expectExceptionMessage('X must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedOverflowBufferXwithSize()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $XX = $mo->array([1,2])->buffer();
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferX');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedOverflowBufferXwithOffsetX()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $offsetX = 1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferX');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedOverflowBufferXwithIncX()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $incX = 2;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferX');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedMinusOffsetY()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $offsetY = -1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument offsetY must be greater than equals 0.');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedMinusIncY()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $incY = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument incY must be greater than 0.');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedIllegalBufferY()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $YY = new \stdClass();
+        $this->expectException(TypeError::class);
+        $this->expectExceptionMessage('Y must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedOverflowBufferYwithSize()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $YY = $mo->array([1,2])->buffer();
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferY');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedOverflowBufferYwithOffsetY()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $offsetX = 1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferX');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedOverflowBufferYwithIncY()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4]);
+        $X = $mo->array([-1,1,2,5]);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $incY = 2;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferY');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+    public function testsearchsortedUnmatchDataType()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([0,2,4],NDArray::float32);
+        $X = $mo->array([-1,1,2,5],NDArray::float64);
+        $Y = $mo->zeros([4],NDArray::int32);
+        [$m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY] =
+            $this->translate_searchsorted($A,$X,false,null,$Y);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unmatch data type for A and X');
+        $math->searchsorted($m,$AA,$offsetA,$incA,$n,$XX,$offsetX,$incX,$right,$YY,$offsetY,$incY);
+    }
+
+//=========================================================================
+
+    public function testcumsumNormal()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([1,2,3]);
+        $Y = $mo->zeros([3],NDArray::float32);
+        [$n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY] =
+            $this->translate_cumsum($X,false,false,$Y);
+
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY);
+        $this->assertEquals([1,3,6],$Y->toArray());
+
+        $math->cumsum($n,$XX,$offsetX,$incX,true,$reverse,$YY,$offsetY,$incY);
+        $this->assertEquals([0,1,3],$Y->toArray());
+
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,true,$YY,$offsetY,$incY);
+        $this->assertEquals([6,3,1],$Y->toArray());
+
+        $math->cumsum($n,$XX,$offsetX,$incX,true,true,$YY,$offsetY,$incY);
+        $this->assertEquals([3,1,0],$Y->toArray());
+
+        $X = $mo->array([1,NAN,3]);
+        $Y = $mo->zeros([3],NDArray::float32);
+        [$n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY] =
+            $this->translate_cumsum($X,false,false,$Y);
+
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY);
+        $this->assertEquals(1,$Y[0]);
+        $this->assertTrue(is_nan($Y[1]));
+        $this->assertTrue(is_nan($Y[2]));
+
+        $math->cumsum($n,$XX,$offsetX,$incX,true,$reverse,$YY,$offsetY,$incY);
+        $this->assertEquals(0,$Y[0]);
+        $this->assertEquals(1,$Y[1]);
+        $this->assertTrue(is_nan($Y[2]));
+
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,true,$YY,$offsetY,$incY);
+        $this->assertTrue(is_nan($Y[0]));
+        $this->assertTrue(is_nan($Y[1]));
+        $this->assertEquals(1,$Y[2]);
+    }
+
+    public function testcumsumMinusN()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([1,2,3]);
+        $Y = $mo->zeros([3],NDArray::float32);
+        [$n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY] =
+            $this->translate_cumsum($X,false,false,$Y);
+
+        $n = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument n must be greater than 0.');
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY);
+    }
+
+    public function testcumsumMinusOffsetX()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([1,2,3]);
+        $Y = $mo->zeros([3],NDArray::float32);
+        [$n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY] =
+            $this->translate_cumsum($X,false,false,$Y);
+
+        $offsetX = -1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument offsetX must be greater than equals 0.');
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY);
+    }
+
+    public function testcumsumMinusIncX()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([1,2,3]);
+        $Y = $mo->zeros([3],NDArray::float32);
+        [$n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY] =
+            $this->translate_cumsum($X,false,false,$Y);
+
+        $incX = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument incX must be greater than 0.');
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY);
+    }
+
+    public function testcumsumIllegalBufferX()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([1,2,3]);
+        $Y = $mo->zeros([3],NDArray::float32);
+        [$n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY] =
+            $this->translate_cumsum($X,false,false,$Y);
+
+        $XX = new \stdClass();
+        $this->expectException(TypeError::class);
+        $this->expectExceptionMessage('X must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY);
+    }
+
+    public function testcumsumOverflowBufferXwithSize()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([1,2,3]);
+        $Y = $mo->zeros([3],NDArray::float32);
+        [$n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY] =
+            $this->translate_cumsum($X,false,false,$Y);
+
+        $XX = $mo->array([1,2])->buffer();
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferX');
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY);
+    }
+
+    public function testcumsumOverflowBufferXwithOffsetX()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([1,2,3]);
+        $Y = $mo->zeros([3],NDArray::float32);
+        [$n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY] =
+            $this->translate_cumsum($X,false,false,$Y);
+
+        $offsetX = 1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferX');
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY);
+    }
+
+    public function testcumsumOverflowBufferXwithIncX()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([1,2,3]);
+        $Y = $mo->zeros([3],NDArray::float32);
+        [$n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY] =
+            $this->translate_cumsum($X,false,false,$Y);
+
+        $incX = 2;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferX');
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY);
+    }
+
+    public function testcumsumMinusOffsetY()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([1,2,3]);
+        $Y = $mo->zeros([3],NDArray::float32);
+        [$n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY] =
+            $this->translate_cumsum($X,false,false,$Y);
+
+        $offsetY = -1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument offsetY must be greater than equals 0.');
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY);
+    }
+
+    public function testcumsumMinusIncY()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([1,2,3]);
+        $Y = $mo->zeros([3],NDArray::float32);
+        [$n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY] =
+            $this->translate_cumsum($X,false,false,$Y);
+
+        $incY = 0;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Argument incY must be greater than 0.');
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY);
+    }
+
+    public function testcumsumIllegalBufferY()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([1,2,3]);
+        $Y = $mo->zeros([3],NDArray::float32);
+        [$n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY] =
+            $this->translate_cumsum($X,false,false,$Y);
+
+        $YY = new \stdClass();
+        $this->expectException(TypeError::class);
+        $this->expectExceptionMessage('Y must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY);
+    }
+
+    public function testcumsumOverflowBufferYwithSize()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([1,2,3]);
+        $Y = $mo->zeros([3],NDArray::float32);
+        [$n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY] =
+            $this->translate_cumsum($X,false,false,$Y);
+
+        $YY = $mo->array([1,2])->buffer();
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferY');
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY);
+    }
+
+    public function testcumsumOverflowBufferYwithOffsetY()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([1,2,3]);
+        $Y = $mo->zeros([3],NDArray::float32);
+        [$n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY] =
+            $this->translate_cumsum($X,false,false,$Y);
+
+        $offsetX = 1;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferX');
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY);
+    }
+
+    public function testcumsumOverflowBufferYwithIncY()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([1,2,3]);
+        $Y = $mo->zeros([3],NDArray::float32);
+        [$n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY] =
+            $this->translate_cumsum($X,false,false,$Y);
+
+        $incY = 2;
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Vector specification too large for bufferY');
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY);
+    }
+
+    public function testcumsumUnmatchDataType()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $X = $mo->array([1,2,3]);
+        $Y = $mo->zeros([3],NDArray::float64);
+        [$n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY] =
+            $this->translate_cumsum($X,false,false,$Y);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unmatch data type for X and Y');
+        $math->cumsum($n,$XX,$offsetX,$incX,$exclusive,$reverse,$YY,$offsetY,$incY);
+    }
+
+//=========================================================================
 
     public function testzerosNormal()
     {
@@ -3381,1078 +4894,818 @@ class Test extends TestCase
 
 ######################################################################
 
-    ##
-    public function testSelectAxis0Normal()
+    public function testGatherAxisNullNormal()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
         $X = $mo->array([0,2],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
-        $this->assertEquals([[1,2,3],[7,8,9]],$Y->toArray());
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
+        $this->assertEquals([[1,2,3],[7,8,9]],$B->toArray());
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float64);
         $X = $mo->array([0,2],NDArray::int64);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float64);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float64);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
-        $this->assertEquals([[1,2,3],[7,8,9]],$Y->toArray());
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
+        $this->assertEquals([[1,2,3],[7,8,9]],$B->toArray());
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::int64);
         $X = $mo->array([0,2],NDArray::int64);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::int64);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::int64);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
-        $this->assertEquals([[1,2,3],[7,8,9]],$Y->toArray());
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
+        $this->assertEquals([[1,2,3],[7,8,9]],$B->toArray());
 
         $A = $mo->array([1,2,3,4],NDArray::float32);
         $X = $mo->array([0,2],NDArray::int32);
-        $Y = $mo->array([0,0],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([0,0],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
-        $this->assertEquals([1,3],$Y->toArray());
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
+        $this->assertEquals([1,3],$B->toArray());
 
         $A = $mo->array([1,2,3,4],NDArray::float64);
         $X = $mo->array([0,2],NDArray::int64);
-        $Y = $mo->array([0,0],NDArray::float64);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([0,0],NDArray::float64);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
-        $this->assertEquals([1,3],$Y->toArray());
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
+        $this->assertEquals([1,3],$B->toArray());
 
         $A = $mo->array([1,2,3,4],NDArray::int64);
         $X = $mo->array([0,2],NDArray::int64);
-        $Y = $mo->array([0,0],NDArray::int64);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([0,0],NDArray::int64);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
-        $this->assertEquals([1,3],$Y->toArray());
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
+        $this->assertEquals([1,3],$B->toArray());
     }
 
-    public function testSelectAxis0LabelNumberOutOfBounds1()
+
+    public function testGatherAxisNullLabelNumberOutOfBounds1()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
         $X = $mo->array([0,4],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Label number is out of bounds.');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testSelectAxis0LabelNumberOutOfBounds2()
+    public function testGatherAxisNullLabelNumberOutOfBounds2()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
         $X = $mo->array([0,-1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Label number is out of bounds.');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis0MinusM()
+    public function testGatherAxisNullMinusN()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
         $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
-        $M = 0;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Argument m must be greater than 0.');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
-    }
-
-    public function testselectAxis0MinusN()
-    {
-        $mo = new MatrixOperator();
-        $math = $this->getMath($mo);
-
-        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
-        $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
-
-        $N = 0;
+        $n = 0;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument n must be greater than 0.');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis0MinusK()
+    public function testGatherAxisNullMinusK()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
         $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
-        $K = 0;
+        $k = 0;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument k must be greater than 0.');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis0MinusOffsetA()
+    public function testGatherAxisNullMinusNumClass()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
         $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
+
+        $numClass = 0;
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Argument numClass must be greater than or equal 0.');
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
+    }
+
+    public function testGatherAxisNullMinusOffsetA()
+    {
+        $mo = new MatrixOperator();
+        $math = $this->getMath($mo);
+
+        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
+        $X = $mo->array([0,1],NDArray::int32);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
         $offA = -1;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Argument offsetA must be greater than equals 0.');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Argument offsetA must be greater than or equal 0.');
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis0MinusLdA()
+    public function testGatherAxisNullIllegalBufferA()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
         $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
-
-        $ldA = 0;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Argument ldA must be greater than 0.');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
-    }
-
-    public function testselectAxis0IllegalBufferA()
-    {
-        $mo = new MatrixOperator();
-        $math = $this->getMath($mo);
-
-        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
-        $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
         $AA = new \stdClass();
         $this->expectException(TypeError::class);
         $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis0OverflowBufferAwithSize()
+    public function testGatherAxisNullOverflowBufferAwithSize()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
         $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
         $AA = $mo->array([1,2,3,4,5,6,7,8,9,10,11])->buffer();
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Matrix specification too large for bufferA');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Matrix A specification too large for buffer');
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis0OverflowBufferAwithOffset()
+    public function testGatherAxisNullOverflowBufferAwithOffset()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
         $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
         $offA = 1;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Matrix specification too large for bufferA');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Matrix A specification too large for buffer');
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis0OverflowBufferAwithLdA()
+    public function testGatherAxisNullMinusOffsetX()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
         $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
-
-        $ldA = 4;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Matrix specification too large for bufferA');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
-    }
-
-    public function testselectAxis0MinusOffsetX()
-    {
-        $mo = new MatrixOperator();
-        $math = $this->getMath($mo);
-
-        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
-        $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
         $offX = -1;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Argument offsetX must be greater than equals 0.');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Argument offsetX must be greater than or equal 0.');
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis0MinusIncX()
+    public function testGatherAxisNullIllegalBufferX()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
         $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
-
-        $incX = 0;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Argument incX must be greater than 0.');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
-    }
-
-    public function testselectAxis0IllegalBufferX()
-    {
-        $mo = new MatrixOperator();
-        $math = $this->getMath($mo);
-
-        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
-        $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
         $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis0OverflowBufferXwithSize()
+    public function testGatherAxisNullOverflowBufferXwithSize()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
         $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
         $XX = $mo->array([1])->buffer();
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Matrix X specification too large for buffer.');
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis0OverflowBufferXwithOffsetX()
+    public function testGatherAxisNullOverflowBufferXwithOffsetX()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
         $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
         $offX = 1;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Matrix X specification too large for buffer.');
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis0OverflowBufferXwithIncX()
+    public function testGatherAxisNullMinusOffsetB()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
         $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
-        $incX = 2;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $offB = -1;
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Argument offsetB must be greater than or equal 0.');
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis0MinusOffsetY()
+    public function testGatherAxisNullIllegalBufferB()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
         $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
-        $offY = -1;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Argument offsetY must be greater than equals 0.');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
-    }
-
-    public function testselectAxis0MinusLdY()
-    {
-        $mo = new MatrixOperator();
-        $math = $this->getMath($mo);
-
-        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
-        $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
-
-        $ldY = 0;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Argument ldY must be greater than 0.');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
-    }
-
-    public function testselectAxis0IllegalBufferY()
-    {
-        $mo = new MatrixOperator();
-        $math = $this->getMath($mo);
-
-        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
-        $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
-
-        $YY = new \stdClass();
+        $BB = new \stdClass();
         $this->expectException(TypeError::class);
         $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis0OverflowBufferYwithSize()
+    public function testGatherAxisNullOverflowBufferBwithSize()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
         $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
-        $YY = $mo->array([0])->buffer();
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Matrix specification too large for bufferY');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $BB = $mo->array([0])->buffer();
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Matrix B specification too large for buffer.');
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis0OverflowBufferXwithOffsetY()
+    public function testGatherAxisNullOverflowBufferBwithOffsetB()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
         $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
+        $B = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=null,$B,$A->dtype());
+        $this->assertFalse($reduce);
 
-        $offY = 1;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Matrix specification too large for bufferY');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
-    }
-
-    public function testselectAxis0OverflowBufferXwithLdY()
-    {
-        $mo = new MatrixOperator();
-        $math = $this->getMath($mo);
-
-        $A = $mo->array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]],NDArray::float32);
-        $X = $mo->array([0,1],NDArray::int32);
-        $Y = $mo->array([[0,0,0],[0,0,0]],NDArray::float32);
-        [$M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY] =
-            $this->translate_selectAxis0($A,$X,$Y);
-
-        $ldY = 4;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Matrix specification too large for bufferY');
-        $math->selectAxis0($M,$N,$K,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$ldY);
+        $offB = 1;
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Matrix B specification too large for buffer.');
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
 ######################################################################
-    public function testSelectAxis1Normal()
+    public function testReduceGatherAxis1Normal()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([1,2]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
+        $B = $mo->array([0,0]);
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=1,$B,$A->dtype());
+        $this->assertTrue($reduce);
 
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
-        $this->assertEquals([2,6],$Y->toArray());
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
+        $this->assertEquals([2,6],$B->toArray());
     }
 
-    public function testSelectAxis1LabelNumberOutOfBounds1()
+    public function testReduceGatherAxis1LabelNumberOutOfBounds1()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([1,3]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
+        $B = $mo->array([0,0]);
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=1,$B,$A->dtype());
+        $this->assertTrue($reduce);
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Label number is out of bounds.');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testSelectAxis1LabelNumberOutOfBounds2()
+    public function testReduceGatherAxis1LabelNumberOutOfBounds2()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
+        $B = $mo->array([0,0]);
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=1,$B,$A->dtype());
+        $this->assertTrue($reduce);
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Label number is out of bounds.');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis1MinusM()
+    public function testReduceGatherAxis1MinusM()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
+        $B = $mo->array([0,0]);
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=1,$B,$A->dtype());
+        $this->assertTrue($reduce);
 
-        $M = 0;
+        $m = 0;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument m must be greater than 0.');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis1MinusN()
+    public function testReduceGatherAxis1MinusN()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
+        $B = $mo->array([0,0]);
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=1,$B,$A->dtype());
+        $this->assertTrue($reduce);
 
-        $N = 0;
+        $n = 0;
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Argument n must be greater than 0.');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis1MinusOffsetA()
+    public function testReduceGatherAxis1MinusOffsetA()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
+        $B = $mo->array([0,0]);
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=1,$B,$A->dtype());
+        $this->assertTrue($reduce);
 
         $offA = -1;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Argument offsetA must be greater than equals 0.');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Argument offsetA must be greater than or equal 0.');
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis1MinusLdA()
+    public function testReduceGatherAxis1IllegalBufferA()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
-
-        $ldA = 0;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Argument ldA must be greater than 0.');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
-    }
-
-    public function testselectAxis1IllegalBufferA()
-    {
-        $mo = new MatrixOperator();
-        $math = $this->getMath($mo);
-
-        $A = $mo->array([[1,2,3],[4,5,6]]);
-        $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
+        $B = $mo->array([0,0]);
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=1,$B,$A->dtype());
+        $this->assertTrue($reduce);
 
         $AA = new \stdClass();
         $this->expectException(TypeError::class);
         $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis1OverflowBufferAwithSize()
+    public function testReduceGatherAxis1OverflowBufferAwithSize()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
+        $B = $mo->array([0,0]);
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=1,$B,$A->dtype());
+        $this->assertTrue($reduce);
 
         $AA = $mo->array([1,2,3,4,5])->buffer();
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Matrix specification too large for bufferA');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Matrix A specification too large for buffer.');
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis1OverflowBufferAwithOffset()
+    public function testReduceGatherAxis1OverflowBufferAwithOffset()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
+        $B = $mo->array([0,0]);
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=1,$B,$A->dtype());
+        $this->assertTrue($reduce);
 
         $offA = 1;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Matrix specification too large for bufferA');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Matrix A specification too large for buffer.');
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis1OverflowBufferAwithLdA()
+    public function testReduceGatherAxis1MinusOffsetX()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
-
-        $ldA = 4;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Matrix specification too large for bufferA');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
-    }
-
-    public function testselectAxis1MinusOffsetX()
-    {
-        $mo = new MatrixOperator();
-        $math = $this->getMath($mo);
-
-        $A = $mo->array([[1,2,3],[4,5,6]]);
-        $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
+        $B = $mo->array([0,0]);
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=1,$B,$A->dtype());
+        $this->assertTrue($reduce);
 
         $offX = -1;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Argument offsetX must be greater than equals 0.');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Argument offsetX must be greater than or equal 0.');
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis1MinusIncX()
+    public function testReduceGatherAxis1IllegalBufferX()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
-
-        $incX = 0;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Argument incX must be greater than 0.');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
-    }
-
-    public function testselectAxis1IllegalBufferX()
-    {
-        $mo = new MatrixOperator();
-        $math = $this->getMath($mo);
-
-        $A = $mo->array([[1,2,3],[4,5,6]]);
-        $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
+        $B = $mo->array([0,0]);
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=1,$B,$A->dtype());
+        $this->assertTrue($reduce);
 
         $XX = new \stdClass();
         $this->expectException(TypeError::class);
         $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis1OverflowBufferXwithSize()
+    public function testReduceGatherAxis1OverflowBufferXwithSize()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
-
+        $B = $mo->array([0,0]);
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=1,$B,$A->dtype());
+        $this->assertTrue($reduce);
         $XX = $mo->array([1])->buffer();
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Matrix X specification too large for buffer.');
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis1OverflowBufferXwithOffsetX()
+    public function testReduceGatherAxis1OverflowBufferXwithOffsetX()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
+        $B = $mo->array([0,0]);
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=1,$B,$A->dtype());
+        $this->assertTrue($reduce);
 
         $offX = 1;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Matrix X specification too large for buffer.');
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis1OverflowBufferXwithIncX()
+    public function testReduceGatherAxis1MinusOffsetB()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
+        $B = $mo->array([0,0]);
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=1,$B,$A->dtype());
+        $this->assertTrue($reduce);
 
-        $incX = 2;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Vector specification too large for bufferX');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
+        $offB = -1;
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Argument offsetB must be greater than or equal 0.');
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis1MinusOffsetY()
+    public function testReduceGatherAxis1IllegalBufferB()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
+        $B = $mo->array([0,0]);
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=1,$B,$A->dtype());
+        $this->assertTrue($reduce);
 
-        $offY = -1;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Argument offsetY must be greater than equals 0.');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
-    }
-
-    public function testselectAxis1MinusIncY()
-    {
-        $mo = new MatrixOperator();
-        $math = $this->getMath($mo);
-
-        $A = $mo->array([[1,2,3],[4,5,6]]);
-        $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
-
-        $incY = 0;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Argument incY must be greater than 0.');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
-    }
-
-    public function testselectAxis1IllegalBufferY()
-    {
-        $mo = new MatrixOperator();
-        $math = $this->getMath($mo);
-
-        $A = $mo->array([[1,2,3],[4,5,6]]);
-        $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
-
-        $YY = new \stdClass();
+        $BB = new \stdClass();
         $this->expectException(TypeError::class);
         $this->expectExceptionMessage('must implement interface Interop\Polite\Math\Matrix\LinearBuffer');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis1OverflowBufferYwithSize()
+    public function testReduceGatherAxis1OverflowBufferBwithSize()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
+        $B = $mo->array([0,0]);
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=1,$B,$A->dtype());
+        $this->assertTrue($reduce);
 
-        $YY = $mo->array([0])->buffer();
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Vector specification too large for bufferY');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
+        $BB = $mo->array([0])->buffer();
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Matrix B specification too large for buffer.');
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis1OverflowBufferXwithOffsetY()
+    public function testReduceGatherAxis1OverflowBufferXwithOffsetB()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
 
         $A = $mo->array([[1,2,3],[4,5,6]]);
         $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
+        $B = $mo->array([0,0]);
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB]
+            = $this->translate_gather($scatterAdd=false,$A,$X,$axis=1,$B,$A->dtype());
+        $this->assertTrue($reduce);
 
-        $offY = 1;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Vector specification too large for bufferY');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
+        $offB = 1;
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Matrix B specification too large for buffer.');
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$AA,$offA,$BB,$offB);
     }
 
-    public function testselectAxis1OverflowBufferXwithIncY()
-    {
-        $mo = new MatrixOperator();
-        $math = $this->getMath($mo);
-
-        $A = $mo->array([[1,2,3],[4,5,6]]);
-        $X = $mo->array([1,-1]);
-        $Y = $mo->array([0,0]);
-        [$M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY] =
-            $this->translate_selectAxis1($A,$X,$Y);
-
-        $incY = 2;
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Vector specification too large for bufferY');
-        $math->selectAxis1($M,$N,$AA,$offA,$ldA,$XX,$offX,$incX,$YY,$offY,$incY);
-    }
-    protected function translate_scatterAxis0(
-        $X,$Y,$numClass,$A)
-    {
-        $m = $numClass;
-        if($Y->ndim()!=1)
-            $n = $Y->shape()[1];
-        else
-            $n = 1;
-
-        $k = $X->size();
-        $AA = $A->buffer();
-        $offA = $A->offset();
-        $ldA = $n;
-        $XX = $X->buffer();
-        $offX = $X->offset();
-        $YY = $Y->buffer();
-        $offY = $Y->offset();
-        $ldY = $n;
-        return([
-            $m,
-            $n,
-            $k,
-            $AA,$offA,$ldA,
-            $XX,$offX,1,
-            $YY,$offY,$ldY
-            ]);
-    }
-
-    public function testScatterAxis0()
+    public function testScatterAxisNull()
     {
         $mo = new MatrixOperator();
         $math = $this->getMath($mo);
         // float32
         $numClass = 4;
         $X = $mo->array([0,2],NDArray::int64);
-        $Y = $mo->array([[1,2,3],[7,8,9]],NDArray::float32);
-        $A = $mo->zeros([4,3],$Y->dtype());
-        [$m,$n,$k,$AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY] = $this->translate_scatterAxis0(
-        $X,$Y,$numClass,$A);
-        $math->scatterAxis0(
-            $m,$n,$k,
-            $AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY,false);
+        $A = $mo->array([[1,2,3],[7,8,9]],NDArray::float32);
+        $B = $mo->zeros([4,3],$A->dtype());
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA]
+            = $this->translate_scatter($X,$A,$numClass,$axis=null,$B);
+        $this->assertFalse($reduce);
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA);
 
         $this->assertEquals(
            [[1,2,3],
             [0,0,0],
             [7,8,9],
             [0,0,0]],
-            $A->toArray()
+            $B->toArray()
         );
+
         // float64
         $X = $mo->array([0,2],NDArray::int64);
-        $Y = $mo->array([[1,2,3],[7,8,9]],NDArray::float64);
-        $A = $mo->zeros([4,3],$Y->dtype());
-        [$m,$n,$k,$AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY] = $this->translate_scatterAxis0(
-        $X,$Y,$numClass,$A);
-        $math->scatterAxis0(
-            $m,$n,$k,
-            $AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY,false);
+        $A = $mo->array([[1,2,3],[7,8,9]],NDArray::float64);
+        $B = $mo->zeros([4,3],$A->dtype());
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA]
+            = $this->translate_scatter($X,$A,$numClass,$axis=null,$B);
+        $this->assertFalse($reduce);
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA);
+
         $this->assertEquals(
            [[1,2,3],
             [0,0,0],
             [7,8,9],
             [0,0,0]],
-            $A->toArray()
+            $B->toArray()
         );
         // int64
         $X = $mo->array([0,2],NDArray::int64);
-        $Y = $mo->array([[1,2,3],[7,8,9]],NDArray::int64);
-        $A = $mo->zeros([4,3],$Y->dtype());
-        [$m,$n,$k,$AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY] = $this->translate_scatterAxis0(
-        $X,$Y,$numClass,$A);
-        $math->scatterAxis0(
-            $m,$n,$k,
-            $AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY,false);
+        $A = $mo->array([[1,2,3],[7,8,9]],NDArray::int64);
+        $B = $mo->zeros([4,3],$A->dtype());
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA]
+            = $this->translate_scatter($X,$A,$numClass,$axis=null,$B);
+        $this->assertFalse($reduce);
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA);
         $this->assertEquals(
            [[1,2,3],
             [0,0,0],
             [7,8,9],
             [0,0,0]],
-            $A->toArray()
+            $B->toArray()
         );
         // uint8
         $X = $mo->array([0,2],NDArray::int64);
-        $Y = $mo->array([[1,2,3],[7,8,9]],NDArray::uint8);
-        $A = $mo->zeros([4,3],$Y->dtype());
-        [$m,$n,$k,$AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY] = $this->translate_scatterAxis0(
-        $X,$Y,$numClass,$A);
-        $math->scatterAxis0(
-            $m,$n,$k,
-            $AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY,false);
+        $A = $mo->array([[1,2,3],[7,8,9]],NDArray::uint8);
+        $B = $mo->zeros([4,3],$A->dtype());
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA]
+            = $this->translate_scatter($X,$A,$numClass,$axis=null,$B);
+        $this->assertFalse($reduce);
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA);
         $this->assertEquals(
            [[1,2,3],
             [0,0,0],
             [7,8,9],
             [0,0,0]],
-            $A->toArray()
+            $B->toArray()
         );
         // float32
         $X = $mo->array([0,2],NDArray::int64);
-        $Y = $mo->array([1,3],NDArray::float32);
-        $A = $mo->zeros([4],$Y->dtype());
-        [$m,$n,$k,$AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY] = $this->translate_scatterAxis0(
-        $X,$Y,$numClass,$A);
-        $math->scatterAxis0(
-            $m,$n,$k,
-            $AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY,false);
+        $A = $mo->array([1,3],NDArray::float32);
+        $B = $mo->zeros([4],$A->dtype());
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA]
+            = $this->translate_scatter($X,$A,$numClass,$axis=null,$B);
+        $this->assertFalse($reduce);
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA);
         $this->assertEquals(
            [1,0,3,0],
-            $A->toArray()
+            $B->toArray()
         );
         // int32
         $X = $mo->array([0,2],NDArray::int64);
-        $Y = $mo->array([1,3],NDArray::int32);
-        $A = $mo->zeros([4],$Y->dtype());
-        [$m,$n,$k,$AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY] = $this->translate_scatterAxis0(
-        $X,$Y,$numClass,$A);
-        $math->scatterAxis0(
-            $m,$n,$k,
-            $AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY,false);
+        $A = $mo->array([1,3],NDArray::int32);
+        $B = $mo->zeros([4],$A->dtype());
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA]
+            = $this->translate_scatter($X,$A,$numClass,$axis=null,$B);
+        $this->assertFalse($reduce);
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA);
         $this->assertEquals(
            [1,0,3,0],
-            $A->toArray()
+            $B->toArray()
         );
         // float64
         $X = $mo->array([0,2],NDArray::int64);
-        $Y = $mo->array([1,3],NDArray::float64);
-        $A = $mo->zeros([4],$Y->dtype());
-        [$m,$n,$k,$AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY] = $this->translate_scatterAxis0(
-        $X,$Y,$numClass,$A);
-        $math->scatterAxis0(
-            $m,$n,$k,
-            $AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY,false);
+        $A = $mo->array([1,3],NDArray::float64);
+        $B = $mo->zeros([4],$A->dtype());
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA]
+            = $this->translate_scatter($X,$A,$numClass,$axis=null,$B);
+        $this->assertFalse($reduce);
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA);
         $this->assertEquals(
            [1,0,3,0],
-            $A->toArray()
+            $B->toArray()
         );
         // int64
         $X = $mo->array([0,2],NDArray::int64);
-        $Y = $mo->array([1,3],NDArray::int64);
-        $A = $mo->zeros([4],$Y->dtype());
-        [$m,$n,$k,$AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY] = $this->translate_scatterAxis0(
-        $X,$Y,$numClass,$A);
-        $math->scatterAxis0(
-            $m,$n,$k,
-            $AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY,false);
+        $A = $mo->array([1,3],NDArray::int64);
+        $B = $mo->zeros([4],$A->dtype());
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA]
+            = $this->translate_scatter($X,$A,$numClass,$axis=null,$B);
+        $this->assertFalse($reduce);
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA);
         $this->assertEquals(
            [1,0,3,0],
-            $A->toArray()
+            $B->toArray()
         );
         // uint8
         $X = $mo->array([0,2],NDArray::int64);
-        $Y = $mo->array([252,254],NDArray::uint8);
-        $A = $mo->zeros([4],$Y->dtype());
-        [$m,$n,$k,$AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY] = $this->translate_scatterAxis0(
-        $X,$Y,$numClass,$A);
-        $math->scatterAxis0(
-            $m,$n,$k,
-            $AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY,false);
+        $A = $mo->array([252,254],NDArray::uint8);
+        $B = $mo->zeros([4],$A->dtype());
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA]
+            = $this->translate_scatter($X,$A,$numClass,$axis=null,$B);
+        $this->assertFalse($reduce);
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA);
         $this->assertEquals(
            [252,0,254,0],
-            $A->toArray()
+            $B->toArray()
         );
         // x=uint8
         $X = $mo->array([0,255],NDArray::uint8);
-        $Y = $mo->array([252,254],NDArray::uint8);
-        $A = $mo->zeros([256],$Y->dtype());
-        [$m,$n,$k,$AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY] = $this->translate_scatterAxis0(
-        $X,$Y,$numClass=256,$A);
-        $math->scatterAxis0(
-            $m,$n,$k,
-            $AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$ldY,false);
-        $this->assertEquals(252,$A[0]);
-        $this->assertEquals(254,$A[255]);
-    }
-
-    protected function translate_scatterAxis1(
-        $X,$Y,$numClass,$A)
-    {
-        $m = $X->shape()[0];
-        $n = $numClass;
-        $AA = $A->buffer();
-        $offA = $A->offset();
-        $ldA = $n;
-        $XX = $X->buffer();
-        $offX = $X->offset();
-        $YY = $Y->buffer();
-        $offY = $Y->offset();
-        return([
-            $m,
-            $n,
-            $AA,$offA,$ldA,
-            $XX,$offX,1,
-            $YY,$offY,1
-            ]);
+        $A = $mo->array([252,254],NDArray::uint8);
+        $B = $mo->zeros([256],$A->dtype());
+        $numClass = 256;
+        [$reduce,$reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA]
+            = $this->translate_scatter($X,$A,$numClass,$axis=null,$B);
+        $this->assertFalse($reduce);
+        $math->gather($reverse,$addMode,$n,$k,$numClass,$XX,$offX,$BB,$offB,$AA,$offA);
+        $this->assertEquals(252,$B[0]);
+        $this->assertEquals(254,$B[255]);
     }
 
     public function testScatterAxis1()
@@ -4461,77 +5714,59 @@ class Test extends TestCase
         $math = $this->getMath($mo);
         $numClass = 3;
         $X = $mo->array([0,1,2,0],NDArray::int32);
-        $Y = $mo->array([1,5,9,10],NDArray::float32);
-        $A = $mo->zeros([4,3],$Y->dtype());
-        [$m,$n,$AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$incY] = $this->translate_scatterAxis1(
-        $X,$Y,$numClass,$A);
-        $math->scatterAxis1(
-            $m,$n,
-            $AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$incY,false);
+        $A = $mo->array([1,5,9,10],NDArray::float32);
+        $B = $mo->zeros([4,3],$A->dtype());
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$BB,$offB,$AA,$offA]
+            = $this->translate_scatter($X,$A,$numClass,$axis=1,$B);
+        $this->assertTrue($reduce);
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$BB,$offB,$AA,$offA);
+
         $this->assertEquals(
            [[1,0,0],
             [0,5,0],
             [0,0,9],
             [10,0,0]],
-            $A->toArray());
+            $B->toArray());
 
         $X = $mo->array([0,1,2,0],NDArray::int64);
-        $A = $mo->zeros([4,3],$Y->dtype());
-        [$m,$n,$AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$incY] = $this->translate_scatterAxis1(
-        $X,$Y,$numClass,$A);
-        $math->scatterAxis1(
-            $m,$n,
-            $AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$incY,false);
+        $B = $mo->zeros([4,3],$A->dtype());
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$BB,$offB,$AA,$offA]
+            = $this->translate_scatter($X,$A,$numClass,$axis=1,$B);
+        $this->assertTrue($reduce);
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$BB,$offB,$AA,$offA);
+
         $this->assertEquals(
            [[1,0,0],
             [0,5,0],
             [0,0,9],
             [10,0,0]],
-            $A->toArray());
+            $B->toArray());
 
         $X = $mo->array([0,1,2,0],NDArray::float32);
-        $A = $mo->zeros([4,3],$Y->dtype());
-        [$m,$n,$AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$incY] = $this->translate_scatterAxis1(
-        $X,$Y,$numClass,$A);
-        $math->scatterAxis1(
-            $m,$n,
-            $AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$incY,false);
+        $B = $mo->zeros([4,3],$A->dtype());
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$BB,$offB,$AA,$offA]
+            = $this->translate_scatter($X,$A,$numClass,$axis=1,$B);
+        $this->assertTrue($reduce);
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$BB,$offB,$AA,$offA);
         $this->assertEquals(
            [[1,0,0],
             [0,5,0],
             [0,0,9],
             [10,0,0]],
-            $A->toArray());
+            $B->toArray());
 
         $X = $mo->array([0,1,2,0],NDArray::float64);
-        $A = $mo->zeros([4,3],$Y->dtype());
-        [$m,$n,$AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$incY] = $this->translate_scatterAxis1(
-        $X,$Y,$numClass,$A);
-        $math->scatterAxis1(
-            $m,$n,
-            $AA,$offA,$ldA,
-            $XX,$offX,$incX,
-            $YY,$offY,$incY,false);
+        $B = $mo->zeros([4,3],$A->dtype());
+        [$reduce,$reverse,$addMode,$m,$n,$numClass,$XX,$offX,$BB,$offB,$AA,$offA]
+            = $this->translate_scatter($X,$A,$numClass,$axis=1,$B);
+        $this->assertTrue($reduce);
+        $math->reduceGather($reverse,$addMode,$m,$n,$numClass,$XX,$offX,$BB,$offB,$AA,$offA);
         $this->assertEquals(
            [[1,0,0],
             [0,5,0],
             [0,0,9],
             [10,0,0]],
-            $A->toArray());
+            $B->toArray());
     }
 
     public function testupdateAddOnehotNormal()

@@ -5,7 +5,7 @@
 
 # define phpext_rindow_openblas_ptr &rindow_openblas_module_entry
 
-# define PHP_RINDOW_OPENBLAS_VERSION "0.2.4"
+# define PHP_RINDOW_OPENBLAS_VERSION "0.3.0"
 
 # if defined(ZTS) && defined(COMPILE_DL_RINDOW_OPENBLAS)
 ZEND_TSRMLS_CACHE_EXTERN()
@@ -61,23 +61,14 @@ extern void php_rindow_openblas_math_init_ce(INIT_FUNC_ARGS);
 extern zend_class_entry* php_rindow_openblas_buffer_ce;
 extern zend_module_entry rindow_openblas_module_entry;
 
-#define PHP_RINDOW_OPENBLAS_ASSERT_M 0
-#define PHP_RINDOW_OPENBLAS_ASSERT_N 1
-#define PHP_RINDOW_OPENBLAS_ASSERT_K 2
 extern int php_rindow_openblas_assert_shape_parameter(
-    int name, zend_long n);
-#define PHP_RINDOW_OPENBLAS_ASSERT_X 0
-#define PHP_RINDOW_OPENBLAS_ASSERT_Y 1
+    char* name, zend_long n);
 extern int php_rindow_openblas_assert_vector_buffer_spec(
-    int name,php_interop_polite_math_matrix_linear_buffer_t *buffer,
+    char* name,php_interop_polite_math_matrix_linear_buffer_t *buffer,
     zend_long n, zend_long offset, zend_long inc);
-#define PHP_RINDOW_OPENBLAS_ASSERT_A 0
-#define PHP_RINDOW_OPENBLAS_ASSERT_B 2
-#define PHP_RINDOW_OPENBLAS_ASSERT_C 3
 extern int php_rindow_openblas_assert_matrix_buffer_spec(
-    int name,php_interop_polite_math_matrix_linear_buffer_t *buffer,
+    char *name,php_interop_polite_math_matrix_linear_buffer_t *buffer,
     zend_long m, zend_long n, zend_long offset, zend_long ld);
-
 extern int php_rindow_openblas_assert_buffer_size(
     php_interop_polite_math_matrix_linear_buffer_t *buffer,
     zend_long offset,zend_long size,

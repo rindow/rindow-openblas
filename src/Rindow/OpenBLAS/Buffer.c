@@ -421,21 +421,30 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Buffer___construct, 0, 0, 2)
     ZEND_ARG_INFO(0, dtype)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(ai_Buffer_offsetExists, 0, 0, 1)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(ai_Buffer_offsetExists, 0, 1, _IS_BOOL, 0)
     ZEND_ARG_INFO(0, offset)
 ZEND_END_ARG_INFO()
 
+#if PHP_MAJOR_VERSION >= 8
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(ai_Buffer_offsetGet, 0, 1, IS_MIXED, 0)
+    ZEND_ARG_INFO(0, offset)
+ZEND_END_ARG_INFO()
+#else
 ZEND_BEGIN_ARG_INFO_EX(ai_Buffer_offsetGet, 0, 0, 1)
     ZEND_ARG_INFO(0, offset)
 ZEND_END_ARG_INFO()
+#endif
 
-ZEND_BEGIN_ARG_INFO_EX(ai_Buffer_offsetSet, 0, 0, 2)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(ai_Buffer_offsetSet, 0, 2, IS_VOID, 0)
     ZEND_ARG_INFO(0, offset)
     ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(ai_Buffer_offsetUnset, 0, 0, 1)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(ai_Buffer_offsetUnset, 0, 1, IS_VOID, 0)
     ZEND_ARG_INFO(0, offset)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(ai_Buffer_count, 0, 0, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(ai_Buffer_load, 0, 0, 1)
@@ -453,7 +462,7 @@ static zend_function_entry php_rindow_openblas_buffer_me[] = {
     PHP_ME(Buffer, offsetGet, ai_Buffer_offsetGet, ZEND_ACC_PUBLIC)
     PHP_ME(Buffer, offsetSet, ai_Buffer_offsetSet, ZEND_ACC_PUBLIC)
     PHP_ME(Buffer, offsetUnset, ai_Buffer_offsetUnset, ZEND_ACC_PUBLIC)
-    PHP_ME(Buffer, count, ai_Buffer_void, ZEND_ACC_PUBLIC)
+    PHP_ME(Buffer, count, ai_Buffer_count, ZEND_ACC_PUBLIC)
     PHP_ME(Buffer, value_size, ai_Buffer_void, ZEND_ACC_PUBLIC)
     PHP_ME(Buffer, dtype, ai_Buffer_void, ZEND_ACC_PUBLIC)
     PHP_ME(Buffer, dump, ai_Buffer_void, ZEND_ACC_PUBLIC)
@@ -479,6 +488,6 @@ void php_rindow_openblas_buffer_init_ce(INIT_FUNC_ARGS)
     rindow_openblas_buffer_object_handlers.free_obj  = php_rindow_openblas_buffer_free_object;
     rindow_openblas_buffer_object_handlers.clone_obj = NULL;
 
-    zend_class_implements(php_rindow_openblas_buffer_ce, 2, spl_ce_ArrayAccess, spl_ce_Countable);
+    zend_class_implements(php_rindow_openblas_buffer_ce, 2, zend_ce_arrayaccess, zend_ce_countable);
 }
 /* }}} */

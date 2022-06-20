@@ -76,7 +76,7 @@ static PHP_METHOD(Math, randomUniform)
         return;
     }
     if(php_rindow_openblas_assert_vector_buffer_spec(
-        PHP_RINDOW_OPENBLAS_ASSERT_X, bufferX,n,offsetX,incX)) {
+        "X", bufferX,n,offsetX,incX)) {
         return;
     }
 
@@ -180,7 +180,7 @@ static PHP_METHOD(Math, randomNormal)
         return;
     }
     if(php_rindow_openblas_assert_vector_buffer_spec(
-        PHP_RINDOW_OPENBLAS_ASSERT_X, bufferX,n,offsetX,incX)) {
+        "X", bufferX,n,offsetX,incX)) {
         return;
     }
 
@@ -252,7 +252,7 @@ static PHP_METHOD(Math, randomSequence)
         return;
     }
     if(php_rindow_openblas_assert_vector_buffer_spec(
-        PHP_RINDOW_OPENBLAS_ASSERT_X, bufferX,n,offsetX,incX)) {
+        "X", bufferX,n,offsetX,incX)) {
         return;
     }
     if(n<size||size<1) {

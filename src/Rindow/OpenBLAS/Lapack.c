@@ -120,11 +120,11 @@ lapack_int LAPACKE_dgesvd( int matrix_layout, char jobu, char jobvt,
     ZEND_PARSE_PARAMETERS_END();
 
     if(php_rindow_openblas_assert_shape_parameter(
-        PHP_RINDOW_OPENBLAS_ASSERT_M, m)) {
+        "m", m)) {
         return;
     }
     if(php_rindow_openblas_assert_shape_parameter(
-        PHP_RINDOW_OPENBLAS_ASSERT_N, n)) {
+        "n", n)) {
         return;
     }
     if( offsetS < 0 ) {
@@ -157,7 +157,7 @@ lapack_int LAPACKE_dgesvd( int matrix_layout, char jobu, char jobvt,
         return;
     }
     if(php_rindow_openblas_assert_matrix_buffer_spec(
-        PHP_RINDOW_OPENBLAS_ASSERT_A, bufferA,m,n,offsetA,ldA)) {
+        "A", bufferA,m,n,offsetA,ldA)) {
         return;
     }
 

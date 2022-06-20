@@ -33,11 +33,11 @@ static PHP_METHOD(Math, repeat)
     ZEND_PARSE_PARAMETERS_END();
 
     if(php_rindow_openblas_assert_shape_parameter(
-        PHP_RINDOW_OPENBLAS_ASSERT_M, m)) {
+        "m", m)) {
         return;
     }
     if(php_rindow_openblas_assert_shape_parameter(
-        PHP_RINDOW_OPENBLAS_ASSERT_K, k)) {
+        "k", k)) {
         return;
     }
     if(repeats<=0) {
