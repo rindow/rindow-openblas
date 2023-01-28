@@ -13,7 +13,7 @@ Very useful when you want to do deep learning with PHP!
 Requirements
 ============
 
-- PHP7.2 or PHP7.3 or PHP7.4 or PHP8.0 or PHP8.1
+- PHP7.2 or PHP7.3 or PHP7.4 or PHP8.0 or PHP8.1 or PHP8.2
 - Linux or Windows 10
 - OpenBLAS
 
@@ -26,8 +26,9 @@ Download the binary for your version of PHP in "Asset" link.
 
 For Windows, copy rindow_openblas.dll to your PHP extension directory and set extension=rindow_openblas in php.ini.
 
-If you are using Windows, you must download and setup OpenBLAS binary from OpenBLAS releases.
-Please Download the version of OpenBLAS binaries that correspond to the rindow_openblas binaries.
+If you are using Windows, you must Download the version of OpenBLAS binaries that correspond to the rindow_openblas binaries.
+The compatible OpenBLAS Library release number is included in the filename of the rindow-openblas pre-built archive file.
+If you use the wrong OpenBLAS release number DLL, it will not work properly.
 
 - https://github.com/xianyi/OpenBLAS/releases
 
@@ -38,7 +39,8 @@ TMP>copy rindow-openblas-phpX.X-X.X.X-openblasX.X.XX-win-ts-vXXX-x64\rindow_open
 TMP>set PATH=%PATH%;\path\to\OpenBLAS\bin
 ```
 
-For Ubuntu, use the apt command to install the deb file.
+For Ubuntu, if you don't see the bre-build binary you want, click "Show all xxx assets" at the bottom. You will see the hidden prebuilt binaries.
+And use the apt command to install the deb file. 
 
 ```shell
 $ sudo apt install ./rindow-openblas-phpX.X_X.X.X-X+ubuntuXX.XX_amd64.deb
@@ -47,6 +49,7 @@ $ sudo apt install ./rindow-openblas-phpX.X_X.X.X-X+ubuntuXX.XX_amd64.deb
 How to build from source code on Linux
 ======================================
 You can also build and use from source code.
+(Please change the notation of the php version number according to your environment.)
 
 Install build tools and OpenBLAS libray
 ---------------------------------------
@@ -58,7 +61,7 @@ $ sudo apt install build-essential autoconf automake libtool bison re2c
 $ sudo apt install pkg-config
 $ sudo apt install libopenblas-dev
 $ sudo apt install liblapacke-dev
-$ sudo apt install php7.4-dev
+$ sudo apt install php8.1-dev
 ```
  If you want to use the latest version of openblas, download the source code from [the site](https://github.com/xianyi/OpenBLAS/releases), build it, and set the installation location of openblas in PKG_CONFIG_PATH
 
@@ -67,10 +70,10 @@ Run the target php version of phpize and build.
 
 ```shell
 $ git clone https://github.com/rindow/rindow-openblas
-$ cd rindow_openblas
+$ cd rindow-openblas
 $ composer update
-$ phpize7.4
-$ ./configure --enable-rindow_openblas --with-php-config=php-config7.4
+$ phpize8.1
+$ ./configure --enable-rindow_openblas --with-php-config=php-config8.1
 $ make clean
 $ make
 $ make test
@@ -81,9 +84,14 @@ $ make test
 ```shell
 $ sudo make install
 ```
-Add the "extension=rindow_openblas" entry to php.ini
+Add the "extension=rindow_openblas" entry to php.ini or Make the file rindow_openblas.ini.
 
+If you want an easier install, use the following spell instead of "make install" and creating an ini file.
 
+```shell
+$ sh ./packaging.sh 8.1
+$ sudo apt install ./rindow-openblas-php8.1_X.X.X-X+ubuntuXX.XX_amd64.deb
+```
 
 How to build from source code on Windows
 ========================================
@@ -100,12 +108,12 @@ If you want to use the pre-built OpenBLAS libray, you need OpenBLAS release 0.3.
 - https://github.com/xianyi/OpenBLAS/releases
 
 ### Install VC15 or VC16
-Developing PHP extensions for php7.2,php7.3 and php7.4 requires VC15 instead of the latest VC.
+Developing PHP extensions for php7.x requires VC15 instead of the latest VC.
 
 - Install Microsoft Visual Studio 2019 or later installer
 - Run Installer with vs2017 build tools option.
 
-Developing PHP extensions from php8.0 requires VS16. You can use Visual Studio 2019.
+Developing PHP extensions from php8.x, requires VS16. You can use Visual Studio 2019.
 
 ### Build OpenBLAS for pure MSVC from sources
 If you want to build the OpenBLAS on MSVC with static library instead you use pre-build binary on our site, you can build it yourself.
@@ -134,12 +142,12 @@ https://wiki.php.net/internals/windows/stepbystepbuild_sdk_2
 
 ### php sdk and devel-pack binaries for windows
 
-- You must know that PHP 7.2,7.3 and 7.4 needs environment for the MSVC version vc15 (that means Visual Studio 2017). php-sdk releases 2.1.9 supports vc15.
+- You must know that PHP 7.x needs environment for the MSVC version vc15 (that means Visual Studio 2017). php-sdk releases 2.1.9 supports vc15.
 - For PHP 7.x, Download the php-sdk from https://github.com/microsoft/php-sdk-binary-tools/releases/tag/php-sdk-2.1.9
-- If you want to build extensions for PHP 8.0, You have to use php-sdk release 2.2.0. It supports vs16.
-- For PHP 8.0, Download the php-sdk from https://github.com/microsoft/php-sdk-binary-tools/releases/tag/php-sdk-2.2.0
+- If you want to build extensions for PHP 8.x, You have to use php-sdk release 2.2.0. It supports vs16.
+- For PHP 8.x, Download the php-sdk from https://github.com/microsoft/php-sdk-binary-tools/releases/tag/php-sdk-2.2.0
 - Extract to c:\php-sdk
-- Download target dev-pack from https://windows.php.net/downloads/releases/
+- Download target Development package from https://windows.php.net/download
 - Extract to /path/to/php-devel-pack-x.x.x-Win32-Vxxx-x64/
 
 ### start php-sdk for target PHP version
@@ -148,7 +156,7 @@ Open Visual Studio Command Prompt for VS for the target PHP version(see stepbyst
 Note that you must explicitly specify the version of vc15 for which php.exe was built.
 The -vcvars_ver=14.16 means vc15.
 
-If you want to build for PHP 8.0, No options required.
+If you want to build for PHP 8.x, No options required.
 
 ```shell
 C:\visual\studio\path>vcvars64 -vcvars_ver=14.16
@@ -171,6 +179,13 @@ $ cd /path/to/here
 $ composer update
 $ /path/to/php-devel-pack-x.x.x-Win32-VXXX-x64/phpize.bat
 $ configure --enable-rindow_openblas --with-prefix=/path/to/php-installation-path --with-openblas=/path/to/OpenBLAS-libray-built-directory
+```
+Edit "#define PHP_BUILD_SYSTEM" line in the "/php-devel-pack-xxx/include/main/config.w32.h"
+Change the PHP_BUILD_SYSTEM definition to the same value as in "/php-devel-pack-xxx/include/main/config.pickle.h". If the values are not the same, a warning error will occur during build.
+
+And then Build.
+
+```shell
 $ nmake clean
 $ nmake
 $ nmake test

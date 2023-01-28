@@ -9,6 +9,6 @@
         "interop-phpobjects/polite-math": ">=1.0.4"
     },
     "require-dev": {
-        "rindow/rindow-math-matrix": "1.0.8"
+        "rindow/rindow-math-matrix": ">=1.1"
     }
 }
