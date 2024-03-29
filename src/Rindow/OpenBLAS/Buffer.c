@@ -90,7 +90,7 @@ static void php_rindow_openblas_buffer_do_set(
             }
             break;
         default:
-            zend_throw_exception(spl_ce_DomainException, "invalid dtype", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "invalid dtype", 0);
     }
 }
 
@@ -184,7 +184,7 @@ static PHP_METHOD(Buffer, offsetGet)
         return;
     }
     if(offset<0 || offset>=intern->size) {
-        zend_throw_exception(spl_ce_RuntimeException, "Index invalid or out of range", 0);
+        zend_throw_exception(spl_ce_OutOfRangeException, "Index invalid or out of range", 0);
         return;
     }
     switch(intern->dtype) {
@@ -255,7 +255,7 @@ static PHP_METHOD(Buffer, offsetGet)
             }
             RETURN_DOUBLE(floatvalue);
         default:
-            zend_throw_exception(spl_ce_DomainException, "invalid dtype", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "invalid dtype", 0);
     }
 }
 /* }}} */
@@ -298,12 +298,12 @@ static PHP_METHOD(Buffer, offsetSet)
             intvalue = 0;
         }
     } else {
-        zend_throw_exception(spl_ce_DomainException, "invalid dtype", 0);
+        zend_throw_exception(spl_ce_InvalidArgumentException, "invalid dtype", 0);
         return;
     }
 
     if(offset<0 || offset>=intern->size) {
-        zend_throw_exception(spl_ce_RuntimeException, "Index invalid or out of range", 0);
+        zend_throw_exception(spl_ce_OutOfRangeException, "Index invalid or out of range", 0);
         return;
     }
     php_rindow_openblas_buffer_do_set(intern,offset,intvalue,floatvalue);

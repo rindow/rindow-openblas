@@ -145,98 +145,30 @@ static PHP_METHOD(Math, slice)
         zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch data type", 0);
         return;
     }
-    for(i0=0;i0<sizeAxis0;i0++) {
-        for(i1=0;i1<sizeAxis1;i1++){
-            for(i2=0;i2<sizeAxis2;i2++){
-                zend_long pa;
-                zend_long py;
-                pa = (i0+startAxis0)*n*k*size*incA+
-                     (i1+startAxis1)*k*size*incA+
-                     (i2+startAxis2)*size*incA+
-                     offsetA;
-                py = i0*sizeAxis1*sizeAxis2*size+
-                     i1*sizeAxis2*size*incY+
-                     i2*size*incY+
-                     offsetY;
-                if(bufferA->dtype==php_interop_polite_math_matrix_dtype_float32){
-                    float *a = &(((float *)bufferA->data)[pa]);
-                    float *y = &(((float *)bufferY->data)[py]);
-                    if(!reverse) {
-                        if(!addMode) {
-                            cblas_scopy((blasint)size,
-                                a, (blasint)incA,
-                                y, (blasint)incY);
-                        } else {
-                            cblas_saxpy((blasint)size,
-                                1.0,
-                                a, (blasint)incA,
-                                y, (blasint)incY);
-                        }
-                    } else {
-                        if(!addMode) {
-                            cblas_scopy((blasint)size,
-                                y, (blasint)incY,
-                                a, (blasint)incA);
-                        } else {
-                            cblas_saxpy((blasint)size,
-                                1.0,
-                                y, (blasint)incY,
-                                a, (blasint)incA);
-                        }
-                    }
-                } else if(bufferA->dtype==php_interop_polite_math_matrix_dtype_float64){
-                    double *a = &(((double *)bufferA->data)[pa]);
-                    double *y = &(((double *)bufferY->data)[py]);
-                    if(!reverse) {
-                        if(!addMode) {
-                            cblas_dcopy((blasint)size,
-                                a, (blasint)incA,
-                                y, (blasint)incY);
-                        } else {
-                            cblas_daxpy((blasint)size,
-                                1.0,
-                                a, (blasint)incA,
-                                y, (blasint)incY);
-                        }
-                    } else {
-                        if(!addMode) {
-                            cblas_dcopy((blasint)size,
-                                y, (blasint)incY,
-                                a, (blasint)incA);
-                        } else {
-                            cblas_daxpy((blasint)size,
-                                1.0,
-                                y, (blasint)incY,
-                                a, (blasint)incA);
-                        }
-                    }
-                } else {
-                    uint8_t *a, *y;
-                    int rc;
-                    int valueSize = php_rindow_openblas_common_dtype_to_valuesize(bufferA->dtype);
-                    a = php_rindow_openblas_get_address(bufferA,pa,valueSize);
-                    y = php_rindow_openblas_get_address(bufferY,py,valueSize);
-                    if(!reverse) {
-                        if(!addMode) {
-                            rc = php_rindow_openblas_math_copy(
-                                size, bufferA->dtype, a, incA, y, incY);
-                        } else {
-                            rc = php_rindow_openblas_math_add(
-                                size, bufferA->dtype, a, incA, y, incY);
-                        }
-                    } else {
-                        if(!addMode) {
-                            rc = php_rindow_openblas_math_copy(
-                                size, bufferA->dtype, y, incY, a, incA);
-                        } else {
-                            rc = php_rindow_openblas_math_add(
-                                size, bufferA->dtype, y, incY, a, incA);
-                        }
-                    }
-                    if(rc)
-                        return;
-                }
+
+    switch (bufferA->dtype) {
+        case php_interop_polite_math_matrix_dtype_float32: {
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataY,bufferY,offsetY)
+            rindow_matlib_s_slice(reverse,addMode,m,n,k,size,pDataA,incA,pDataY,incY,startAxis0,sizeAxis0,startAxis1,sizeAxis1,startAxis2,sizeAxis2);
+            break;
+        }
+        case php_interop_polite_math_matrix_dtype_float64: {
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataY,bufferY,offsetY)
+            rindow_matlib_d_slice(reverse,addMode,m,n,k,size,pDataA,incA,pDataY,incY,startAxis0,sizeAxis0,startAxis1,sizeAxis1,startAxis2,sizeAxis2);
+            break;
+        }
+        default:{
+            if(!php_rindow_openblas_common_dtype_is_int(bufferA->dtype)&&
+                !php_rindow_openblas_common_dtype_is_bool(bufferA->dtype)) {
+                zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
+                return;
             }
+            void *pDataA = rindow_matlib_common_get_address(bufferA->dtype, bufferA->data,offsetA);
+            void *pDataY = rindow_matlib_common_get_address(bufferY->dtype, bufferY->data,offsetY);
+            rindow_matlib_i_slice(reverse,addMode,m,n,k,size,bufferA->dtype,pDataA,incA,pDataY,incY,startAxis0,sizeAxis0,startAxis1,sizeAxis1,startAxis2,sizeAxis2);
+            break;
         }
     }
 }

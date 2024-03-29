@@ -4,10 +4,16 @@ ARG_ENABLE('rindow_openblas', 'rindow_openblas support', 'no');
 
 ARG_WITH('openblas', 'openblas support', 'no');
 ARG_WITH('flang', 'flang support', 'no');
+ARG_WITH('matlib', 'matlib support', 'no');
+
+//  OpenMP compile option
+//    /openmp:experimental 
 
 if (PHP_RINDOW_OPENBLAS != 'no') {
   var PHP_RINDOW_OPENBLAS_CFLAGS="\
+    /Qvec-report:1 \
     /DZEND_ENABLE_STATIC_TSRMLS_CACHE=1 \
+    /openmp:experimental \
     /I" + configure_module_dirname + " \
   ";
   if(CHECK_HEADER_ADD_INCLUDE("cblas.h", "rindow_openblas", PHP_OPENBLAS + '/build/build/generated')) {
@@ -29,6 +35,15 @@ if (PHP_RINDOW_OPENBLAS != 'no') {
   } else {
       ERROR("NOT FOUND: LinearBuffer interface header files. Please execute \"composer update\" on development directory.");
   }
+  if(CHECK_HEADER_ADD_INCLUDE("rindow/matlib.h", "rindow_openblas", PHP_MATLIB + '/include')) {
+    PHP_RINDOW_OPENBLAS_CFLAGS = PHP_RINDOW_OPENBLAS_CFLAGS + "\
+        /I" + PHP_MATLIB + "/include \
+        /I" + PHP_MATLIB + "/src \
+        /I" + PHP_MATLIB + "/build/src \
+    ";
+  } else {
+    ERROR("NOT FOUND: Rindow Matlib header files. Please set --with-matlib=/some/directory/path");
+  }
 
 	// Condense whitespace in CFLAGS
   PHP_RINDOW_OPENBLAS_CFLAGS = PHP_RINDOW_OPENBLAS_CFLAGS.replace(/\s+/g, ' ');
@@ -36,20 +51,20 @@ if (PHP_RINDOW_OPENBLAS != 'no') {
   AC_DEFINE('HAVE_RINDOW_OPENBLAS', 1, 'rindow_openblas support enabled');
   AC_DEFINE('OPENBLAS_HAVE_IAMIN', 1, 'openblas have iamin');
 
-  EXTENSION('rindow_openblas', 'rindow_openblas.c', null, PHP_RINDOW_OPENBLAS_CFLAGS);
+  EXTENSION('rindow_openblas', 'rindow_openblas.c openblas_client.c', null, PHP_RINDOW_OPENBLAS_CFLAGS);
   ADD_SOURCES(configure_module_dirname + "/src/Rindow/OpenBLAS", "Buffer.c Blas.c Lapack.c Math.c", "rindow_openblas");
-  if (CHECK_LIB("openblas.lib", "rindow_openblas", PHP_OPENBLAS + '/build/lib/Release')) {
-      ADD_FLAG("LIBS_OPENBLAS", "openblas.lib");
-      ADD_FLAG("LDFLAGS", '/libpath:"\\"' + PHP_OPENBLAS + '/build/lib/Release' + '\\"" ');
-  } else if (CHECK_LIB("openblas.lib", "rindow_openblas", PHP_OPENBLAS + '/lib')) {
-      ADD_FLAG("LIBS_OPENBLAS", "openblas.lib");
-      ADD_FLAG("LDFLAGS", '/libpath:"\\"' + PHP_OPENBLAS + '/lib' + '\\"" ');
-  } else if (CHECK_LIB("libopenblas.lib", "rindow_openblas", PHP_OPENBLAS + '/lib')) {
-      ADD_FLAG("LIBS_OPENBLAS", "libopenblas.lib");
-      ADD_FLAG("LDFLAGS", '/libpath:"\\"' + PHP_OPENBLAS + '/lib' + '\\"" ');
-  } else {
-      ERROR("NOT FOUND: OpenBLAS library files. Please set --with-openblas=/some/directory/path");
-  }
+//  if (CHECK_LIB("openblas.lib", "rindow_openblas", PHP_OPENBLAS + '/build/lib/Release')) {
+//      ADD_FLAG("LIBS_OPENBLAS", "openblas.lib");
+//      ADD_FLAG("LDFLAGS", '/libpath:"\\"' + PHP_OPENBLAS + '/build/lib/Release' + '\\"" ');
+//  } else if (CHECK_LIB("openblas.lib", "rindow_openblas", PHP_OPENBLAS + '/lib')) {
+//      ADD_FLAG("LIBS_OPENBLAS", "openblas.lib");
+//      ADD_FLAG("LDFLAGS", '/libpath:"\\"' + PHP_OPENBLAS + '/lib' + '\\"" ');
+//  } else if (CHECK_LIB("libopenblas.lib", "rindow_openblas", PHP_OPENBLAS + '/lib')) {
+//      ADD_FLAG("LIBS_OPENBLAS", "libopenblas.lib");
+//      ADD_FLAG("LDFLAGS", '/libpath:"\\"' + PHP_OPENBLAS + '/lib' + '\\"" ');
+//  } else {
+//      ERROR("NOT FOUND: OpenBLAS library files. Please set --with-openblas=/some/directory/path");
+//  }
   if (CHECK_LIB("flang.lib", "rindow_openblas", PHP_FLANG + '/lib')) {
       ADD_FLAG("LDFLAGS", '/libpath:"\\"' + PHP_FLANG + '/lib' + '\\"" ');
   }

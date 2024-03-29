@@ -1,3 +1,5 @@
+
+/*
 static inline int im2col1d_copyCell(
     zend_bool reverse,
     php_interop_polite_math_matrix_linear_buffer_t *images,
@@ -208,6 +210,7 @@ static inline int im2col1d_execute(
     }
     return 0;
 }
+*/
 
 /*
     cols := im2col1d(images)
@@ -309,7 +312,65 @@ static PHP_METHOD(Math, im2col1d)
             "Unmatch data type of images and cols", 0);
         return;
     }
+    if(images->size<images_offset+images_size) {
+        zend_throw_exception(spl_ce_InvalidArgumentException,
+            "Images size is out of range", 0);
+        return;
+    }
 
+    void *pDataImages = rindow_matlib_common_get_address(images->dtype, images->data,images_offset);
+    void *pDataCols = rindow_matlib_common_get_address(cols->dtype, cols->data,cols_offset);
+
+    int32_t rc = rindow_matlib_im2col1d(
+        images->dtype,reverse,
+        pDataImages,
+        images_size,
+        batches,
+        im_w,
+        channels,
+        filter_w,
+        stride_w,
+        padding,
+        channels_first,
+        dilation_w,
+        cols_channels_first,
+        pDataCols,
+        cols_size
+    );
+    switch(rc) {
+        case 0: {
+            break;
+        }
+        case RINDOW_MATLIB_E_UNSUPPORTED_DATA_TYPE: {
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
+            return;
+        }
+        case RINDOW_MATLIB_E_INVALID_SHAPE_OR_PARAM: {
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Invalid shape or parameters.", 0);
+            return;
+        }
+        case RINDOW_MATLIB_E_UNMATCH_COLS_BUFFER_SIZE: {
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch cols buffer size and images shape", 0);
+            return;
+        }
+        case RINDOW_MATLIB_E_UNMATCH_IMAGE_BUFFER_SIZE: {
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch images buffer size and images shape", 0);
+            return;
+        }
+        case RINDOW_MATLIB_E_IMAGES_OUT_OF_RANGE: {
+            zend_throw_exception(spl_ce_RuntimeException, "Images data out of range", 0);
+            return;
+        }
+        case RINDOW_MATLIB_E_COLS_OUT_OF_RANGE: {
+            zend_throw_exception(spl_ce_RuntimeException, "Cols data out of range", 0);
+            return;
+        }
+        default: {
+            zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Unkown Error (%d)", rc);
+            return;
+        }
+    }
+    /*
     im2col1d_execute(
         reverse,
         images,
@@ -331,6 +392,7 @@ static PHP_METHOD(Math, im2col1d)
 
         cols_size
     );
+    */
     return;
 }
 /* }}} */

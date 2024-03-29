@@ -1,3 +1,12 @@
+IMPORTANT
+=========
+Development of this program has ended.
+Please migrate to the program below instead.
+
+- https://github.com/rindow/rindow-openblas-ffi
+
+We stopped using PHP extensions because it was too difficult to prepare binary files for each PHP version and Linux version.
+
 Rindow OpenBLAS PHP extension
 =============================
 The Rindow OpenBLAS PHP extension is universal Buffer for N-dimension and OpenBLAS and Mathematical library.
@@ -15,36 +24,17 @@ Requirements
 
 - PHP7.2 or PHP7.3 or PHP7.4 or PHP8.0 or PHP8.1 or PHP8.2 or PHP8.3
 - Linux or Windows 10
-- OpenBLAS
+- [OpenBLAS](https://github.com/OpenMathLib/OpenBLAS)
+- [Rindow-Matlib](https://github.com/rindow/rindow-matlib)
 
-How to download and setup pre-build binaries
-============================================
-You can download and use pre-built binaries for Windows and Ubuntu from each releases.
-Download the binary for your version of PHP in "Asset" link.
+Recommend environment
+=====================
 
-- https://github.com/rindow/rindow-openblas/releases
-
-For Windows, copy rindow_openblas.dll to your PHP extension directory and set extension=rindow_openblas in php.ini.
-
-If you are using Windows, you must Download the version of OpenBLAS binaries that correspond to the rindow_openblas binaries.
-The compatible OpenBLAS Library release number is included in the filename of the rindow-openblas pre-built archive file.
-If you use the wrong OpenBLAS release number DLL, it will not work properly.
-
-- https://github.com/xianyi/OpenBLAS/releases
-
-Unzip it to a suitable location and set the execution path in the bin directory.
-
-```shell
-TMP>copy rindow-openblas-phpX.X-X.X.X-openblasX.X.XX-win-ts-vXXX-x64\rindow_openblas.dll \path\to\php\ext
-TMP>set PATH=%PATH%;\path\to\OpenBLAS\bin
-```
-
-For Ubuntu, if you don't see the bre-build binary you want, click "Show all xxx assets" at the bottom. You will see the hidden prebuilt binaries.
-And use the apt command to install the deb file. 
-
-```shell
-$ sudo apt install ./rindow-openblas-phpX.X_X.X.X-X+ubuntuXX.XX_amd64.deb
-```
+- PHP8.1 or PHP8.2 or PHP8.3
+- OpenCL binding for PHP - rindow-opencl 0.2.0. [sources](https://github.com/rindow/rindow-opencl), [binaries](https://github.com/rindow-opencl/releases)
+- BLAS libray for OpenCL implements - rindow-clblast 0.2.0. [sources](https://github.com/rindow/rindow-clblast), [binaries](https://github.com/rindow-clblast/releases)
+- Matrix PHP library - rindow-math-matrix 2.0.0 or later. [sources](https://github.com/rindow/rindow-math-matrix)
+- Driver Pack - rindow-math-matrix-matlibext 1.0.0 or later. [sources](https://github.com/rindow/rindow-math-matrix-matlibext)
 
 How to build from source code on Linux
 ======================================
@@ -69,11 +59,16 @@ $ sudo apt install php8.1-dev
 Run the target php version of phpize and build.
 
 ```shell
+$ cd /path/to/build/directory
+$ git clone https://github.com/rindow/rindow-matlib
+$ cd rindow-matlib
+$ cmake -S . -B build
+$ cd ..
 $ git clone https://github.com/rindow/rindow-openblas
 $ cd rindow-openblas
 $ composer update
 $ phpize8.1
-$ ./configure --enable-rindow_openblas --with-php-config=php-config8.1
+$ ./configure --enable-rindow_openblas --with-rindow_matlib=/path/to/rindow-matlib --with-php-config=php-config8.1
 $ make clean
 $ make
 $ make test
@@ -174,11 +169,13 @@ C:\php-sdk-2.2.0>phpsdk-vs16-x64.bat
 ### Build
 
 ```shell
+$ cd /path/to/Rindow-Matlib-project-directory
+$ cmake -S . -B build
 $ PATH %PATH%;/path/to/OpenBLAS/bin
 $ cd /path/to/here
 $ composer update
 $ /path/to/php-devel-pack-x.x.x-Win32-VXXX-x64/phpize.bat
-$ configure --enable-rindow_openblas --with-prefix=/path/to/php-installation-path --with-openblas=/path/to/OpenBLAS-libray-built-directory
+$ configure --enable-rindow_openblas --with-prefix=/path/to/php-installation-path --with-openblas=/path/to/OpenBLAS-libray-built-directory --with-matlib=/path/to/Rindow-Matlib-project-directory
 ```
 Edit "#define PHP_BUILD_SYSTEM" line in the "/php-devel-pack-xxx/include/main/config.w32.h"
 Change the PHP_BUILD_SYSTEM definition to the same value as in "/php-devel-pack-xxx/include/main/config.pickle.h". If the values are not the same, a warning error will occur during build.

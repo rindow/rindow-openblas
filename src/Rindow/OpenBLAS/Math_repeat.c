@@ -73,57 +73,26 @@ static PHP_METHOD(Math, repeat)
 
     switch (bufferA->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
-            float *a = &(((float *)bufferA->data)[offsetA]);
-            float *b = &(((float *)bufferB->data)[offsetB]);
-            size_t ldA = k;
-            size_t ldB = k;
-            for(zend_long i=0; i<m; i++,a+=ldA) {
-                for(zend_long j=0; j<repeats; j++,b+=ldB) {
-                    if(k==1) {
-                        *b = *a;
-                    } else {
-                        cblas_scopy((blasint)k, a,(blasint)1, b,(blasint)1);
-                    }
-                }
-            }
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataB,bufferB,offsetB)
+            rindow_matlib_s_repeat(m,k,repeats,pDataA,pDataB);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
-            double *a = &(((double *)bufferA->data)[offsetA]);
-            double *b = &(((double *)bufferB->data)[offsetB]);
-            size_t ldA = k;
-            size_t ldB = k;
-            for(zend_long i=0; i<m; i++,a+=ldA) {
-                for(zend_long j=0; j<repeats; j++,b+=ldB) {
-                    if(k==1) {
-                        *b = *a;
-                    } else {
-                        cblas_dcopy((blasint)k, a,(blasint)1, b,(blasint)1);
-                    }
-                }
-            }
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataB,bufferB,offsetB)
+            rindow_matlib_d_repeat(m,k,repeats,pDataA,pDataB);
             break;
         }
-        default: {
+        default:{
             if(!php_rindow_openblas_common_dtype_is_int(bufferA->dtype)&&
                 !php_rindow_openblas_common_dtype_is_bool(bufferA->dtype)) {
-                zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+                zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
                 return;
             }
-
-            int valueSize = php_rindow_openblas_common_dtype_to_valuesize(bufferA->dtype);
-            size_t ldA = k*valueSize;
-            size_t ldB = k*valueSize;
-            uint8_t *a, *b;
-            int rc;
-            a = php_rindow_openblas_get_address(bufferA,offsetA,valueSize);
-            b = php_rindow_openblas_get_address(bufferB,offsetB,valueSize);
-            for(zend_long i=0; i<m; i++,a+=ldA) {
-                for(zend_long j=0; j<repeats; j++,b+=ldB) {
-                    rc = php_rindow_openblas_math_copy(
-                        k, bufferA->dtype, a, 1, b, 1);
-                }
-            }
+            void *pDataA = rindow_matlib_common_get_address(bufferA->dtype, bufferA->data,offsetA);
+            void *pDataB = rindow_matlib_common_get_address(bufferB->dtype, bufferB->data,offsetB);
+            rindow_matlib_i_repeat(m,k,repeats,bufferA->dtype,pDataA,pDataB);
             break;
         }
     }

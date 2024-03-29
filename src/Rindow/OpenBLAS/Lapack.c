@@ -239,7 +239,7 @@ lapack_int LAPACKE_dgesvd( int matrix_layout, char jobu, char jobvt,
             );
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
     if( info == LAPACK_WORK_MEMORY_ERROR ) {

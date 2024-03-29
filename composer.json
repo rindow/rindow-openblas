@@ -6,9 +6,6 @@
     "license": "BSD-3-Clause",
     "require": {
         "php": ">=7.2",
-        "interop-phpobjects/polite-math": ">=1.0.4"
-    },
-    "require-dev": {
-        "rindow/rindow-math-matrix": ">=1.1"
+        "interop-phpobjects/polite-math": ">=1.0.6"
     }
 }

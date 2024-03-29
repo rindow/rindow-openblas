@@ -13,6 +13,11 @@
 #include <Interop/Polite/Math/Matrix.h>
 #include "php_rindow_openblas.h"
 
+#if _MSC_VER
+extern int rindow_load_openblas_dll();
+extern void rindow_unload_openblas_dll();
+#endif
+
 /* For compatibility with older PHP versions */
 #ifndef ZEND_PARSE_PARAMETERS_NONE
 #define ZEND_PARSE_PARAMETERS_NONE() \
@@ -86,7 +91,7 @@ int php_rindow_openblas_assert_shape_parameter(
     char* name, zend_long n)
 {
     if(n<1) {
-        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Argument %s must be greater than 0.",name);
+        zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0, "Argument %s must be greater than 0.",name);
         return -1;
     }
     return 0;
@@ -101,15 +106,15 @@ int php_rindow_openblas_assert_vector_buffer_spec(
         return -1;
     }
     if(offset<0) {
-        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Argument offset%s must be greater than equals 0.",name);
+        zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0, "Argument offset%s must be greater than or equals 0.",name);
         return -1;
     }
     if(inc<1) {
-        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Argument inc%s must be greater than 0.",name);
+        zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0, "Argument inc%s must be greater than 0.",name);
         return -1;
     }
     if(offset+(n-1)*inc >= buffer->size) {
-        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Vector specification too large for buffer%s.",name);
+        zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0, "Vector specification too large for buffer%s.",name);
         return -1;
     }
 
@@ -121,19 +126,19 @@ int php_rindow_openblas_assert_matrix_buffer_spec(
     zend_long m,zend_long n, zend_long offset, zend_long ld)
 {
     if(buffer->data==NULL) {
-        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "uninitialized array: %s",name);
+        zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0, "uninitialized array: %s",name);
         return -1;
     }
     if(offset<0) {
-        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Argument offset%s must be greater than equals 0.",name);
+        zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0, "Argument offset%s must be greater than or equals 0.",name);
         return -1;
     }
     if(ld<1) {
-        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Argument ld%s must be greater than 0.",name);
+        zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0, "Argument ld%s must be greater than 0.",name);
         return -1;
     }
     if(offset+(m-1)*ld+(n-1) >= buffer->size) {
-        zend_throw_exception_ex(spl_ce_RuntimeException, 0, "Matrix specification too large for buffer%s.",name);
+        zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0, "Matrix specification too large for buffer%s.",name);
         return -1;
     }
 
@@ -147,7 +152,7 @@ int php_rindow_openblas_assert_buffer_size(
 {
     if(size<1 || offset<0 ||
         buffer->size < offset+size) {
-        zend_throw_exception(spl_ce_RuntimeException, message, 0);
+        zend_throw_exception(spl_ce_InvalidArgumentException, message, 0);
         return -1;
     }
     return 0;
@@ -195,10 +200,25 @@ PHP_MINFO_FUNCTION(rindow_openblas)
 
 PHP_MINIT_FUNCTION(rindow_openblas)
 {
+#if _MSC_VER
+    int rc=rindow_load_openblas_dll();
+    if(rc!=0) {
+        rindow_unload_openblas_dll();
+        return FAILURE;
+    }
+#endif
     php_rindow_openblas_buffer_init_ce(INIT_FUNC_ARGS_PASSTHRU);
     php_rindow_openblas_blas_init_ce(INIT_FUNC_ARGS_PASSTHRU);
     php_rindow_openblas_lapack_init_ce(INIT_FUNC_ARGS_PASSTHRU);
     php_rindow_openblas_math_init_ce(INIT_FUNC_ARGS_PASSTHRU);
+    return SUCCESS;
+}
+
+PHP_MSHUTDOWN_FUNCTION(rindow_openblas)
+{
+#if _MSC_VER
+    rindow_unload_openblas_dll();
+#endif
     return SUCCESS;
 }
 
@@ -209,7 +229,7 @@ zend_module_entry rindow_openblas_module_entry = {
     "rindow_openblas",					/* Extension name */
     NULL,			                    /* zend_function_entry */
     PHP_MINIT(rindow_openblas),			/* PHP_MINIT - Module initialization */
-    NULL,							    /* PHP_MSHUTDOWN - Module shutdown */
+    PHP_MSHUTDOWN(rindow_openblas),     /* PHP_MSHUTDOWN - Module shutdown */
     PHP_RINIT(rindow_openblas),			/* PHP_RINIT - Request initialization */
     NULL,							    /* PHP_RSHUTDOWN - Request shutdown */
     PHP_MINFO(rindow_openblas),			/* PHP_MINFO - Module info */

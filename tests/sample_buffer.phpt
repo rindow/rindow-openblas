@@ -30,12 +30,12 @@ assert(count($x)==2,'Countable buffer size');
 
 $fn=function($x,$i){$t=false;try{
     $x[$i]=1;
-}catch(RuntimeException $e){$t=true;}return $t;};
+}catch(OutOfRangeException $e){$t=true;}return $t;};
 assert($fn($x,2), 'catch buffer overflow');
 assert($fn($x,-1),'catch buffer overflow');
 $fn=function($x,$i){$t=false;try{
     echo $x[$i];
-}catch(RuntimeException $e){$t=true;}return $t;};
+}catch(OutOfRangeException $e){$t=true;}return $t;};
 assert($fn($x,2), 'catch buffer overflow');
 assert($fn($x,-1),'catch buffer overflow');
 

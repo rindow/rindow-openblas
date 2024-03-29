@@ -1,0 +1,27 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:/php/php-8.2.1-devel-vs16-x64/include",
+                "C:/php/php-8.2.1-devel-vs16-x64/include/main",
+                "C:/OpenBLAS/OpenBLAS-0.3.20-x64/include"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "windowsSdkVersion": "10.0.19041.0",
+            "compilerPath": "cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-msvc-x64",
+            "compilerArgs": [
+                "/openmp:experimental"
+            ]
+        }
+    ],
+    "version": 4
+}

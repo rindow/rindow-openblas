@@ -1,36 +1,5 @@
 #include <ext/standard/php_rand.h>
 
-static inline float php_rindow_rand_range_float(
-    float low,float high)
-{
-    return low+(float)php_mt_rand()/(float)PHP_MT_RAND_MAX/(float)2.0*(high-low);
-}
-
-static inline double php_rindow_rand_range_double(
-    double low,double high)
-{
-    return low+(double)php_mt_rand()/(double)PHP_MT_RAND_MAX/2.0*(high-low);
-}
-
-static inline float php_rindow_rand_normal_float(
-    float mean,float scale)
-{
-    float x,y;
-    x=(float)(php_mt_rand_range(1,PHP_MT_RAND_MAX-1))/(float)PHP_MT_RAND_MAX;
-    y=(float)(php_mt_rand_range(1,PHP_MT_RAND_MAX-1))/(float)PHP_MT_RAND_MAX;
-
-    return sqrtf((float)(-2)*logf(x))*cosf((float)2*(float)M_PI*y)*scale+mean;
-}
-
-static inline double php_rindow_rand_normal_double(
-    double mean,double scale)
-{
-    double x,y;
-    x=(double)php_mt_rand_range(1,PHP_MT_RAND_MAX-1)/(double)PHP_MT_RAND_MAX;
-    y=(double)php_mt_rand_range(1,PHP_MT_RAND_MAX-1)/(double)PHP_MT_RAND_MAX;
-
-    return sqrt(-2*log(x))*cos(2*M_PI*y)*scale+mean;
-}
 
 /*
    X(i) := rand(seed)
@@ -99,41 +68,22 @@ static PHP_METHOD(Math, randomUniform)
         return;
     }
 
-    php_mt_srand((uint32_t)seed);
-
-
     switch(bufferX->dtype) {
-
-        case php_interop_polite_math_matrix_dtype_float32:
-            {
-                float *x = &(((float *)bufferX->data)[offsetX]);
-                zend_long i;
-                for(i=0; i<n; i++,x+=incX) {
-                    *x =php_rindow_rand_range_float((float)low_float,(float)high_float);
-                }
-            }
+        case php_interop_polite_math_matrix_dtype_float32: {
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
+            rindow_matlib_s_randomuniform(n,pDataX,incX,(float)low_float,(float)high_float,seed);
             break;
-        case php_interop_polite_math_matrix_dtype_float64:
-            {
-                double *x = &(((double *)bufferX->data)[offsetX]);
-                zend_long i;
-                for(i=0; i<n; i++,x+=incX) {
-                    *x =php_rindow_rand_range_double((double)low_float,(double)high_float);
-                }
-            }
+        }
+        case php_interop_polite_math_matrix_dtype_float64: {
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
+            rindow_matlib_d_randomuniform(n,pDataX,incX,(double)low_float,(double)high_float,seed);
             break;
-        default:
-            {
-                zend_long i;
-                for(i=0; i<n; i++) {
-                    zend_long value;
-                    value = php_mt_rand_range(low_int,high_int);
-                    rindow_openblas_math_set_integer(
-                        bufferX->dtype, bufferX->data, offsetX,incX,
-                        i, value);
-                }
-            }
+        }
+        default: {
+            void *pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data,offsetX);
+            rindow_matlib_i_randomuniform(n,bufferX->dtype,pDataX,incX,(int32_t)low_int,(int32_t)high_int,seed);
             break;
+        }
     }
 }
 /* }}} */
@@ -184,32 +134,21 @@ static PHP_METHOD(Math, randomNormal)
         return;
     }
 
-    php_mt_srand((uint32_t)seed);
-
-
     switch(bufferX->dtype) {
-
-        case php_interop_polite_math_matrix_dtype_float32:
-            {
-                float *x = &(((float *)bufferX->data)[offsetX]);
-                zend_long i;
-                for(i=0; i<n; i++,x+=incX) {
-                    *x = php_rindow_rand_normal_float((float)mean,(float)scale);
-                }
-            }
+        case php_interop_polite_math_matrix_dtype_float32: {
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
+            rindow_matlib_s_randomnormal(n,pDataX,incX,(float)mean,(float)scale,seed);
             break;
-        case php_interop_polite_math_matrix_dtype_float64:
-            {
-                double *x = &(((double *)bufferX->data)[offsetX]);
-                zend_long i;
-                for(i=0; i<n; i++,x+=incX) {
-                    *x = php_rindow_rand_normal_double((double)mean,(double)scale);
-                }
-            }
+        }
+        case php_interop_polite_math_matrix_dtype_float64: {
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
+            rindow_matlib_d_randomnormal(n,pDataX,incX,(double)mean,(double)scale,seed);
             break;
-        default:
+        }
+        default: {
             zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
+        }
     }
 }
 /* }}} */
@@ -259,24 +198,13 @@ static PHP_METHOD(Math, randomSequence)
         zend_throw_exception(spl_ce_InvalidArgumentException, "size must be smaller then n or equal.", 0);
         return;
     }
-    if(bufferX->dtype!=php_interop_polite_math_matrix_dtype_int64) {
-        zend_throw_exception(spl_ce_InvalidArgumentException, "dtype must be int64.", 0);
+    if(bufferX->dtype!=php_interop_polite_math_matrix_dtype_int64&&
+        bufferX->dtype!=php_interop_polite_math_matrix_dtype_int32) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "dtype must be int32 or int64.", 0);
         return;
     }
 
-    php_mt_srand((uint32_t)seed);
-
-    data = (int64_t*)(bufferX->data);
-    for(i=0;i<n;i++) {
-        data[i+offsetX*incX] = i;
-    }
-
-    for(i=0;i<size;i++) {
-        zend_long tmp,idx;
-        idx = php_mt_rand_range(i,n-1);
-        tmp = data[i+offsetX*incX];
-        data[i+offsetX*incX] = data[idx+offsetX*incX];
-        data[idx+offsetX*incX] = tmp;
-    }
+    void *pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data,offsetX);
+    rindow_matlib_i_randomsequence(n,size,bufferX->dtype,pDataX,incX,seed);
 }
 /* }}} */

@@ -123,7 +123,7 @@ static PHP_METHOD(Blas, scal)
             cblas_dscal((blasint)n, (double)alpha, &(((double *)buffer->data)[offsetX]), (blasint)incX);
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
 }
@@ -202,7 +202,7 @@ static PHP_METHOD(Blas, axpy)
                 &(((double *)bufferY->data)[offsetY]), (blasint)incY);
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
 }
@@ -279,7 +279,7 @@ static PHP_METHOD(Blas, dot)
                 &(((double *)bufferY->data)[offsetY]), (blasint)incY);
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
     RETURN_DOUBLE(result);
@@ -328,7 +328,7 @@ static PHP_METHOD(Blas, asum)
             result = (double)cblas_dasum((blasint)n, &(((double *)buffer->data)[offsetX]), (blasint)incX);
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
     RETURN_DOUBLE(result);
@@ -376,7 +376,7 @@ static PHP_METHOD(Blas, iamax)
             resultIdx = (zend_long)cblas_idamax((blasint)n, &(((double *)buffer->data)[offsetX]), (blasint)incX);
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
     RETURN_LONG(resultIdx);
@@ -425,7 +425,7 @@ static PHP_METHOD(Blas, iamin)
             resultIdx = (zend_long)cblas_idamin((blasint)n, &(((double *)buffer->data)[offsetX]), (blasint)incX);
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
     RETURN_LONG(resultIdx);
@@ -564,7 +564,7 @@ static PHP_METHOD(Blas, nrm2)
             result = (double)cblas_dnrm2((blasint)n, &(((double *)buffer->data)[offsetX]), (blasint)incX);
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
     RETURN_DOUBLE(result);
@@ -671,7 +671,7 @@ static PHP_METHOD(Blas, rotg)
             );
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
 }
@@ -787,7 +787,7 @@ static PHP_METHOD(Blas, rot)
             );
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
 }
@@ -863,7 +863,7 @@ static PHP_METHOD(Blas, swap)
                 &(((double *)bufferY->data)[offsetY]), (blasint)incY);
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
 }
@@ -958,7 +958,7 @@ static PHP_METHOD(Blas, gemv)
         } else if(trans==CblasTrans || trans==CblasConjTrans) {
             rows = n; cols = m;
         } else {
-            zend_throw_exception(spl_ce_RuntimeException, "unknown transpose mode for bufferA.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "unknown transpose mode for bufferA.", 0);
             return;
         }
         if(php_rindow_openblas_assert_vector_buffer_spec(
@@ -1001,7 +1001,7 @@ static PHP_METHOD(Blas, gemv)
                 &(((double *)bufferY->data)[offsetY]), (blasint)incY);
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
 }
@@ -1088,7 +1088,7 @@ static PHP_METHOD(Blas, gemm)
         } else if(transA==CblasTrans || transA==CblasConjTrans) {
             rows = k; cols = m;
         } else {
-            zend_throw_exception(spl_ce_RuntimeException, "unknown transpose mode for bufferA.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "unknown transpose mode for bufferA.", 0);
             return;
         }
         if(php_rindow_openblas_assert_matrix_buffer_spec(
@@ -1109,7 +1109,7 @@ static PHP_METHOD(Blas, gemm)
         } else if(transB==CblasTrans || transB==CblasConjTrans) {
             rows = n; cols = k;
         } else {
-            zend_throw_exception(spl_ce_RuntimeException, "unknown transpose mode for bufferB.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "unknown transpose mode for bufferB.", 0);
             return;
         }
         if(php_rindow_openblas_assert_matrix_buffer_spec(
@@ -1160,7 +1160,7 @@ static PHP_METHOD(Blas, gemm)
                 &(((double *)bufferC->data)[offsetC]), (blasint)ldC);
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
 }
@@ -1244,7 +1244,7 @@ static PHP_METHOD(Blas, symm)
         } else if(side==CblasRight) {
             rows = n;
         } else {
-            zend_throw_exception(spl_ce_RuntimeException, "unknown side mode for bufferA.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "unknown side mode for bufferA.", 0);
             return;
         }
         if(php_rindow_openblas_assert_matrix_buffer_spec(
@@ -1307,7 +1307,7 @@ static PHP_METHOD(Blas, symm)
                 &(((double *)bufferC->data)[offsetC]), (blasint)ldC);
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
 }
@@ -1379,7 +1379,7 @@ static PHP_METHOD(Blas, syrk)
         } else if(trans==CblasTrans || trans==CblasConjTrans) {
             rows = k; cols = n;
         } else {
-            zend_throw_exception(spl_ce_RuntimeException, "unknown transpose mode for bufferA.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "unknown transpose mode for bufferA.", 0);
             return;
         }
         if(php_rindow_openblas_assert_matrix_buffer_spec(
@@ -1428,7 +1428,7 @@ static PHP_METHOD(Blas, syrk)
                 &(((double *)bufferC->data)[offsetC]), (blasint)ldC);
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
 }
@@ -1512,7 +1512,7 @@ static PHP_METHOD(Blas, syr2k)
         } else if(trans==CblasTrans || trans==CblasConjTrans) {
             rows = k; cols = n;
         } else {
-            zend_throw_exception(spl_ce_RuntimeException, "unknown transpose mode for bufferA.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "unknown transpose mode for bufferA.", 0);
             return;
         }
         if(php_rindow_openblas_assert_matrix_buffer_spec(
@@ -1567,7 +1567,7 @@ static PHP_METHOD(Blas, syr2k)
                 &(((double *)bufferC->data)[offsetC]), (blasint)ldC);
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
 }
@@ -1642,7 +1642,7 @@ static PHP_METHOD(Blas, trmm)
         } else if(side==CblasRight) {
             sizeA = n;
         } else {
-            zend_throw_exception(spl_ce_RuntimeException, "unknown transpose mode for bufferA.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "unknown transpose mode for bufferA.", 0);
             return;
         }
         if(php_rindow_openblas_assert_matrix_buffer_spec(
@@ -1691,7 +1691,7 @@ static PHP_METHOD(Blas, trmm)
                 &(((double *)bufferB->data)[offsetB]), (blasint)ldB);
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
 }
@@ -1766,7 +1766,7 @@ static PHP_METHOD(Blas, trsm)
         } else if(side==CblasRight) {
             sizeA = n;
         } else {
-            zend_throw_exception(spl_ce_RuntimeException, "unknown transpose mode for bufferA.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "unknown transpose mode for bufferA.", 0);
             return;
         }
         if(php_rindow_openblas_assert_matrix_buffer_spec(
@@ -1815,7 +1815,117 @@ static PHP_METHOD(Blas, trsm)
                 &(((double *)bufferB->data)[offsetB]), (blasint)ldB);
             break;
         default:
-            zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
+            return;
+    }
+}
+/* }}} */
+
+/* Method Rindow\OpenBLAS\Blas::
+    public function omatcopy(
+        int $order,
+        int $trans,
+        int $m,
+        int $n,
+        float $alpha,
+        BufferInterface $A, int $offsetA, int $ldA,
+        BufferInterface $B, int $offsetB, int $ldB,
+    ) : void
+ {{{ */
+static PHP_METHOD(Blas, omatcopy)
+{
+    php_interop_polite_math_matrix_linear_buffer_t* bufferA;
+    php_interop_polite_math_matrix_linear_buffer_t* bufferB;
+    zend_long order;
+    zend_long trans;
+    zend_long m;
+    zend_long n;
+    double alpha;
+    zval* a=NULL;
+    zend_long offsetA;
+    zend_long ldA;
+    zval* b=NULL;
+    zend_long offsetB;
+    zend_long ldB;
+
+    ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 11, 11)
+        Z_PARAM_LONG(order)
+        Z_PARAM_LONG(trans)
+        Z_PARAM_LONG(m)
+        Z_PARAM_LONG(n)
+        Z_PARAM_DOUBLE(alpha)
+
+        Z_PARAM_OBJECT(a) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_LONG(offsetA)
+        Z_PARAM_LONG(ldA)
+        Z_PARAM_OBJECT(b) // Interop\Polite\Math\Matrix\LinearBuffer
+        Z_PARAM_LONG(offsetB)
+
+        Z_PARAM_LONG(ldB)
+    ZEND_PARSE_PARAMETERS_END();
+
+    if(php_rindow_openblas_assert_shape_parameter(
+        "m", m)) {
+        return;
+    }
+    if(php_rindow_openblas_assert_shape_parameter(
+        "n", n)) {
+        return;
+    }
+    // Check Buffer A
+    bufferA = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(a);
+    if(php_rindow_openblas_assert_buffer_type(bufferA,"a")) {
+        return;
+    }
+    if(php_rindow_openblas_assert_matrix_buffer_spec("A", bufferA,m,n,offsetA,ldA)) {
+        return;
+    }
+    bufferB = Z_INTEROP_POLITE_MATH_MATRIX_LINEAR_BUFFER_OBJ_P(b);
+    if(php_rindow_openblas_assert_buffer_type(bufferB,"b")) {
+        return;
+    }
+    {
+        zend_long rows,cols;
+        if(trans==CblasNoTrans || trans==CblasConjNoTrans) {
+            rows = m; cols = n;
+        } else if(trans==CblasTrans || trans==CblasConjTrans) {
+            rows = n; cols = m;
+        } else {
+            zend_throw_exception(spl_ce_InvalidArgumentException, "unknown transpose mode for bufferA.", 0);
+            return;
+        }
+        if(php_rindow_openblas_assert_matrix_buffer_spec("B", bufferB,rows,cols,offsetB,ldB)) {
+            return;
+        }
+    }
+
+    // Check Buffer A and B
+    if(bufferA->dtype!=bufferB->dtype) {
+        zend_throw_exception(spl_ce_InvalidArgumentException, "Unmatch data type for A and B", 0);
+        return;
+    }
+
+    switch (bufferA->dtype) {
+        case php_interop_polite_math_matrix_dtype_float32:
+            cblas_somatcopy(
+                (OPENBLAS_CONST enum CBLAS_ORDER)order,
+                (OPENBLAS_CONST enum CBLAS_TRANSPOSE)trans,
+                (blasint)m,(blasint)n,
+                (float)alpha,
+                &(((float *)bufferA->data)[offsetA]), (blasint)ldA,
+                &(((float *)bufferB->data)[offsetB]), (blasint)ldB);
+            break;
+        case php_interop_polite_math_matrix_dtype_float64:
+            cblas_domatcopy(
+                (OPENBLAS_CONST enum CBLAS_ORDER)order,
+                (OPENBLAS_CONST enum CBLAS_TRANSPOSE)trans,
+                (blasint)m,(blasint)n,
+                (double)alpha,
+                &(((double *)bufferA->data)[offsetA]), (blasint)ldA,
+                &(((double *)bufferB->data)[offsetB]), (blasint)ldB);
+            break;
+        default:
+            zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
             return;
     }
 }
@@ -2051,6 +2161,20 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Blas_trsm, 0, 0, 14)
     ZEND_ARG_INFO(0, ldB)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(ai_Blas_omatcopy, 0, 0, 11)
+    ZEND_ARG_INFO(0, order)
+    ZEND_ARG_INFO(0, trans)
+    ZEND_ARG_INFO(0, m)
+    ZEND_ARG_INFO(0, n)
+    ZEND_ARG_INFO(0, alpha)
+    ZEND_ARG_OBJ_INFO(0, a, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
+    ZEND_ARG_INFO(0, offsetA)
+    ZEND_ARG_INFO(0, ldA)
+    ZEND_ARG_OBJ_INFO(0, b, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
+    ZEND_ARG_INFO(0, offsetB)
+    ZEND_ARG_INFO(0, ldB)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(ai_Blas_void, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
@@ -2081,6 +2205,7 @@ static zend_function_entry php_rindow_openblas_blas_me[] = {
     PHP_ME(Blas, syr2k, ai_Blas_syr2k, ZEND_ACC_PUBLIC)
     PHP_ME(Blas, trmm,  ai_Blas_trmm,  ZEND_ACC_PUBLIC)
     PHP_ME(Blas, trsm,  ai_Blas_trsm,  ZEND_ACC_PUBLIC)
+    PHP_ME(Blas, omatcopy, ai_Blas_omatcopy, ZEND_ACC_PUBLIC)
     PHP_FE_END
     /* clang-format on */
 };

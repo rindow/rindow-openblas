@@ -111,115 +111,47 @@ static PHP_METHOD(Math, gather)
 
     switch (bufferA->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
-            float *a = &(((float *)bufferA->data)[offsetA]);
-            float *b = &(((float *)bufferB->data)[offsetB]);
-            zend_long selector;
-            size_t ldB = k;
-            size_t ldIndex = k;
-            for(zend_long j=0; j<n; j++,b+=ldB) {
-                if(rindow_openblas_math_get_integer(
-                            bufferX->dtype, bufferX->data, offsetX,1,
-                            j, &selector)) {
-                    zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type of label number.", 0);
+            void *pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data,offsetX);
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataB,bufferB,offsetB)
+            if(pDataX==NULL) {
+                zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
+                return;
+            }
+            int32_t errcode = rindow_matlib_s_gather(reverse,addMode,n,k,numClass,bufferX->dtype,pDataX,pDataA,pDataB);
+            if(errcode) {
+                if(errcode == RINDOW_MATLIB_E_UNSUPPORTED_DATA_TYPE) {
+                    zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
                     return;
-                }
-                if(selector<0||selector>=numClass) {
+                } else if(errcode == RINDOW_MATLIB_E_PERM_OUT_OF_RANGE) {
                     zend_throw_exception(spl_ce_RuntimeException, "Label number is out of bounds.", 0);
                     return;
-                }
-                if(reverse) {
-                    if(addMode) {
-                        if(k==1) {
-                            a[selector*ldIndex] += *b;
-                        } else {
-                            cblas_saxpy((blasint)k, 1.0,
-                                b, (blasint)1,
-                                &(a[selector*ldIndex]), (blasint)1);
-                        }
-                    } else {
-                        if(k==1) {
-                            a[selector*ldIndex] = *b;
-                        } else {
-                            cblas_scopy((blasint)k,
-                                b, (blasint)1,
-                                &(a[selector*ldIndex]), (blasint)1);
-                        }
-                    }
                 } else {
-                    if(addMode) {
-                        if(k==1) {
-                            *b += a[selector*ldIndex];
-                        } else {
-                            cblas_saxpy((blasint)k, 1.0,
-                                &(a[selector*ldIndex]), (blasint)1,
-                                b, (blasint)1);
-                        }
-                    } else {
-                        if(k==1) {
-                            *b = a[selector*ldIndex];
-                        } else {
-                            cblas_scopy((blasint)k,
-                                &(a[selector*ldIndex]), (blasint)1,
-                                b, (blasint)1);
-                        }
-                    }
+                    zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0, "Unknown error.(%d)", errcode);
+                    return;
                 }
             }
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
-            double *a = &(((double *)bufferA->data)[offsetA]);
-            double *b = &(((double *)bufferB->data)[offsetB]);
-            zend_long selector;
-            size_t ldB = k;
-            size_t ldIndex = k;
-            for(zend_long j=0; j<n; j++,b+=ldB) {
-                if(rindow_openblas_math_get_integer(
-                            bufferX->dtype, bufferX->data, offsetX,1,
-                            j, &selector)) {
-                    zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type of label number.", 0);
+            void *pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data,offsetX);
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataB,bufferB,offsetB)
+            if(pDataX==NULL) {
+                zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
+                return;
+            }
+            int32_t errcode = rindow_matlib_d_gather(reverse,addMode,n,k,numClass,bufferX->dtype,pDataX,pDataA,pDataB);
+            if(errcode) {
+                if(errcode == RINDOW_MATLIB_E_UNSUPPORTED_DATA_TYPE) {
+                    zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
                     return;
-                }
-                if(selector<0||selector>=numClass) {
+                } else if(errcode == RINDOW_MATLIB_E_PERM_OUT_OF_RANGE) {
                     zend_throw_exception(spl_ce_RuntimeException, "Label number is out of bounds.", 0);
                     return;
-                }
-                if(reverse) {
-                    if(addMode) {
-                        if(k==1) {
-                            a[selector*ldIndex] += *b;
-                        } else {
-                            cblas_daxpy((blasint)k, 1.0,
-                                b, (blasint)1,
-                                &(a[selector*ldIndex]), (blasint)1);
-                        }
-                    } else {
-                        if(k==1) {
-                            a[selector*ldIndex] = *b;
-                        } else {
-                            cblas_dcopy((blasint)k,
-                                b, (blasint)1,
-                                &(a[selector*ldIndex]), (blasint)1);
-                        }
-                    }
                 } else {
-                    if(addMode) {
-                        if(k==1) {
-                            *b += a[selector*ldIndex];
-                        } else {
-                            cblas_daxpy((blasint)k, 1.0,
-                                &(a[selector*ldIndex]), (blasint)1,
-                                b, (blasint)1);
-                        }
-                    } else {
-                        if(k==1) {
-                            *b = a[selector*ldIndex];
-                        } else {
-                            cblas_dcopy((blasint)k,
-                                &(a[selector*ldIndex]), (blasint)1,
-                                b, (blasint)1);
-                        }
-                    }
+                    zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0, "Unknown error.: %d", errcode);
+                    return;
                 }
             }
             break;
@@ -227,53 +159,33 @@ static PHP_METHOD(Math, gather)
         default: {
             if(!php_rindow_openblas_common_dtype_is_int(bufferA->dtype)&&
                 !php_rindow_openblas_common_dtype_is_bool(bufferA->dtype)) {
-                zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+                zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
                 return;
             }
-
-            int valueSize = php_rindow_openblas_common_dtype_to_valuesize(bufferA->dtype);
-            zend_long selector;
-            size_t ldB = k*valueSize;
-            size_t ldIndex = k*valueSize;
-            uint8_t *a, *b;
-            int rc;
-            a = php_rindow_openblas_get_address(bufferA,offsetA,valueSize);
-            b = php_rindow_openblas_get_address(bufferB,offsetB,valueSize);
-
-            for(zend_long j=0; j<n; j++,b+=ldB) {
-                if(rindow_openblas_math_get_integer(
-                            bufferX->dtype, bufferX->data, offsetX,1,
-                            j, &selector)) {
-                    zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type of label number.", 0);
+            void *pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data,offsetX);
+            void *pDataA = rindow_matlib_common_get_address(bufferA->dtype, bufferA->data,offsetA);
+            void *pDataB = rindow_matlib_common_get_address(bufferB->dtype, bufferB->data,offsetB);
+            if(pDataX==NULL) {
+                zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
+                return;
+            }
+            int32_t errcode = rindow_matlib_i_gather(reverse,addMode,n,k,numClass,bufferX->dtype,pDataX,bufferA->dtype,pDataA,pDataB);
+            if(errcode) {
+                if(errcode == RINDOW_MATLIB_E_UNSUPPORTED_DATA_TYPE) {
+                    zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
                     return;
-                }
-                if(selector<0||selector>=numClass) {
+                } else if(errcode == RINDOW_MATLIB_E_PERM_OUT_OF_RANGE) {
                     zend_throw_exception(spl_ce_RuntimeException, "Label number is out of bounds.", 0);
                     return;
-                }
-                if(reverse) {
-                    if(addMode) {
-                        rc = php_rindow_openblas_math_add(
-                            k, bufferA->dtype, b, 1, a+selector*ldIndex, 1);
-                    } else {
-                        rc = php_rindow_openblas_math_copy(
-                            k, bufferA->dtype, b, 1, a+selector*ldIndex, 1);
-                    }
                 } else {
-                    if(addMode) {
-                        rc = php_rindow_openblas_math_add(
-                            k, bufferA->dtype, a+selector*ldIndex, 1, b, 1);
-                    } else {
-                        rc = php_rindow_openblas_math_copy(
-                            k, bufferA->dtype, a+selector*ldIndex, 1, b, 1);
-                    }
-                }
-                if(rc)
+                    zend_throw_exception(spl_ce_RuntimeException, "Unknown error.", 0);
                     return;
+                }
             }
             break;
         }
     }
+
 }
 
 /*
@@ -387,75 +299,47 @@ static PHP_METHOD(Math, reduceGather)
 
     switch (bufferA->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
-            float *a = &(((float *)bufferA->data)[offsetA]);
-            float *b = &(((float *)bufferB->data)[offsetB]);
-            zend_long selector;
-            zend_long idxX = offsetX;
-            zend_long ldX = n;
-            zend_long ldA = n*numClass;
-            zend_long ldB = n;
-            for(zend_long i=0; i<m; i++,idxX+=ldX,a+=ldA,b+=ldB) {
-                for(zend_long j=0; j<n; j++) {
-                    if(rindow_openblas_math_get_integer(
-                                bufferX->dtype, bufferX->data, idxX, 1,
-                                j, &selector)) {
-                        zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type of label number.", 0);
-                        return;
-                    }
-                    if(selector<0||selector>=numClass) {
-                        zend_throw_exception(spl_ce_RuntimeException, "Label number is out of bounds.", 0);
-                        return;
-                    }
-                    if(reverse) {
-                        if(addMode) {
-                            a[j+selector*ldB] += b[j];
-                        } else {
-                            a[j+selector*ldB] = b[j];
-                        }
-                    } else {
-                        if(addMode) {
-                            b[j] += a[j+selector*ldB];
-                        } else {
-                            b[j] = a[j+selector*ldB];
-                        }
-                    }
+            void *pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data,offsetX);
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataB,bufferB,offsetB)
+            if(pDataX==NULL) {
+                zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
+                return;
+            }
+            int32_t errcode = rindow_matlib_s_reducegather(reverse,addMode,m,n,numClass,bufferX->dtype,pDataX,pDataA,pDataB);
+            if(errcode) {
+                if(errcode == RINDOW_MATLIB_E_UNSUPPORTED_DATA_TYPE) {
+                    zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
+                    return;
+                } else if(errcode == RINDOW_MATLIB_E_PERM_OUT_OF_RANGE) {
+                    zend_throw_exception(spl_ce_RuntimeException, "Label number is out of bounds.", 0);
+                    return;
+                } else {
+                    zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0, "Unknown error.(%d)", errcode);
+                    return;
                 }
             }
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
-            double *a = &(((double *)bufferA->data)[offsetA]);
-            double *b = &(((double *)bufferB->data)[offsetB]);
-            zend_long selector;
-            zend_long idxX = offsetX;
-            zend_long ldX = n;
-            zend_long ldA = n*numClass;
-            zend_long ldB = n;
-            for(zend_long i=0; i<m; i++,idxX+=ldX,a+=ldA,b+=ldB) {
-                for(zend_long j=0; j<n; j++) {
-                    if(rindow_openblas_math_get_integer(
-                                bufferX->dtype, bufferX->data, idxX, 1,
-                                j, &selector)) {
-                        zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type of label number.", 0);
-                        return;
-                    }
-                    if(selector<0||selector>=numClass) {
-                        zend_throw_exception(spl_ce_RuntimeException, "Label number is out of bounds.", 0);
-                        return;
-                    }
-                    if(reverse) {
-                        if(addMode) {
-                            a[j+selector*ldB] += b[j];
-                        } else {
-                            a[j+selector*ldB] = b[j];
-                        }
-                    } else {
-                        if(addMode) {
-                            b[j] += a[j+selector*ldB];
-                        } else {
-                            b[j] = a[j+selector*ldB];
-                        }
-                    }
+            void *pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data,offsetX);
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataB,bufferB,offsetB)
+            if(pDataX==NULL) {
+                zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
+                return;
+            }
+            int32_t errcode = rindow_matlib_d_reducegather(reverse,addMode,m,n,numClass,bufferX->dtype,pDataX,pDataA,pDataB);
+            if(errcode) {
+                if(errcode == RINDOW_MATLIB_E_UNSUPPORTED_DATA_TYPE) {
+                    zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
+                    return;
+                } else if(errcode == RINDOW_MATLIB_E_PERM_OUT_OF_RANGE) {
+                    zend_throw_exception(spl_ce_RuntimeException, "Label number is out of bounds.", 0);
+                    return;
+                } else {
+                    zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0, "Unknown error.: %d", errcode);
+                    return;
                 }
             }
             break;
@@ -463,61 +347,27 @@ static PHP_METHOD(Math, reduceGather)
         default: {
             if(!php_rindow_openblas_common_dtype_is_int(bufferA->dtype)&&
                 !php_rindow_openblas_common_dtype_is_bool(bufferA->dtype)) {
-                zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type.", 0);
+                zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
                 return;
             }
-
-            int valueSize = php_rindow_openblas_common_dtype_to_valuesize(bufferA->dtype);
-            zend_long selector;
-            zend_long idxX = offsetX;
-            zend_long ldX = n;
-            zend_long ldA = n*numClass*valueSize;
-            zend_long ldB = n*valueSize;
-            zend_long ldIndex = n*valueSize;
-            uint8_t *a, *b;
-            int rc;
-            a = php_rindow_openblas_get_address(bufferA,offsetA,valueSize);
-            b = php_rindow_openblas_get_address(bufferB,offsetB,valueSize);
-
-            for(zend_long i=0; i<m; i++,idxX+=ldX,a+=ldA,b+=ldB) {
-                for(zend_long j=0; j<n; j++) {
-                    if(rindow_openblas_math_get_integer(
-                                bufferX->dtype, bufferX->data, idxX,1,
-                                j, &selector)) {
-                        zend_throw_exception(spl_ce_RuntimeException, "Unsupported data type of label number.", 0);
-                        return;
-                    }
-                    if(selector<0||selector>=numClass) {
-                        zend_throw_exception(spl_ce_RuntimeException, "Label number is out of bounds.", 0);
-                        return;
-                    }
-                    if(reverse) {
-                        if(addMode) {
-                            rc = php_rindow_openblas_math_add(
-                                1, bufferA->dtype,
-                                b+j*valueSize, 1,
-                                a+j*valueSize+selector*ldIndex, 1);
-                        } else {
-                            rc = php_rindow_openblas_math_copy(
-                                1, bufferA->dtype,
-                                b+j*valueSize, 1,
-                                a+j*valueSize+selector*ldIndex, 1);
-                        }
-                    } else {
-                        if(addMode) {
-                            rc = php_rindow_openblas_math_add(
-                                1, bufferA->dtype,
-                                a+j*valueSize+selector*ldIndex, 1,
-                                b+j*valueSize, 1);
-                        } else {
-                            rc = php_rindow_openblas_math_copy(
-                                1, bufferA->dtype,
-                                a+j*valueSize+selector*ldIndex, 1,
-                                b+j*valueSize, 1);
-                        }
-                    }
-                    if(rc)
-                        return;
+            void *pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data,offsetX);
+            void *pDataA = rindow_matlib_common_get_address(bufferA->dtype, bufferA->data,offsetA);
+            void *pDataB = rindow_matlib_common_get_address(bufferB->dtype, bufferB->data,offsetB);
+            if(pDataX==NULL) {
+                zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
+                return;
+            }
+            int32_t errcode = rindow_matlib_i_reducegather(reverse,addMode,m,n,numClass,bufferX->dtype,pDataX,bufferA->dtype,pDataA,pDataB);
+            if(errcode) {
+                if(errcode == RINDOW_MATLIB_E_UNSUPPORTED_DATA_TYPE) {
+                    zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
+                    return;
+                } else if(errcode == RINDOW_MATLIB_E_PERM_OUT_OF_RANGE) {
+                    zend_throw_exception(spl_ce_RuntimeException, "Label number is out of bounds.", 0);
+                    return;
+                } else {
+                    zend_throw_exception(spl_ce_RuntimeException, "Unknown error.", 0);
+                    return;
                 }
             }
             break;
