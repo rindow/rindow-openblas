@@ -81,13 +81,13 @@ static PHP_METHOD(Math, reduceSum)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataB,bufferB,offsetB)
-            rindow_matlib_s_reducesum(m,n,k,pDataA,pDataB);
+            rindow_matlib_s_reducesum((index_t)m,(index_t)n,(index_t)k,pDataA,pDataB);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
-            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
-            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataB,bufferB,offsetB)
-            rindow_matlib_s_reducesum(m,n,k,pDataA,pDataB);
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
+            PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataB,bufferB,offsetB)
+            rindow_matlib_d_reducesum((index_t)m,(index_t)n,(index_t)k,pDataA,pDataB);
             break;
         }
         default: {
@@ -181,13 +181,13 @@ static PHP_METHOD(Math, reduceMax)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataB,bufferB,offsetB)
-            rindow_matlib_s_reducemax(m,n,k,pDataA,pDataB);
+            rindow_matlib_s_reducemax((index_t)m,(index_t)n,(index_t)k,pDataA,pDataB);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataB,bufferB,offsetB)
-            rindow_matlib_d_reducemax(m,n,k,pDataA,pDataB);
+            rindow_matlib_d_reducemax((index_t)m,(index_t)n,(index_t)k,pDataA,pDataB);
             break;
         }
         default: {
@@ -274,14 +274,14 @@ static PHP_METHOD(Math, reduceArgMax)
     switch (bufferA->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
-            void *pDataB = rindow_matlib_common_get_address(bufferB->dtype, bufferB->data,offsetB);
-            rindow_matlib_s_reduceargmax(m,n,k,pDataA,bufferB->dtype,pDataB);
+            void *pDataB = rindow_matlib_common_get_address((dtype_t)bufferB->dtype, bufferB->data,(index_t)offsetB);
+            rindow_matlib_s_reduceargmax((index_t)m,(index_t)n,(index_t)k,pDataA,(dtype_t)bufferB->dtype,pDataB);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
-            void *pDataB = rindow_matlib_common_get_address(bufferB->dtype, bufferB->data,offsetB);
-            rindow_matlib_d_reduceargmax(m,n,k,pDataA,bufferB->dtype,pDataB);
+            void *pDataB = rindow_matlib_common_get_address((dtype_t)bufferB->dtype, bufferB->data,(index_t)offsetB);
+            rindow_matlib_d_reduceargmax((index_t)m,(index_t)n,(index_t)k,pDataA,(dtype_t)bufferB->dtype,pDataB);
             break;
         }
         default: {

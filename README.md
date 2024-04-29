@@ -51,7 +51,7 @@ $ sudo apt install build-essential autoconf automake libtool bison re2c
 $ sudo apt install pkg-config
 $ sudo apt install libopenblas-dev
 $ sudo apt install liblapacke-dev
-$ sudo apt install php8.1-dev
+$ sudo apt install phpX.X-dev (ex. php8.1-dev)
 ```
  If you want to use the latest version of openblas, download the source code from [the site](https://github.com/xianyi/OpenBLAS/releases), build it, and set the installation location of openblas in PKG_CONFIG_PATH
 
@@ -67,8 +67,8 @@ $ cd ..
 $ git clone https://github.com/rindow/rindow-openblas
 $ cd rindow-openblas
 $ composer update
-$ phpize8.1
-$ ./configure --enable-rindow_openblas --with-rindow_matlib=/path/to/rindow-matlib --with-php-config=php-config8.1
+$ phpizeX.X (ex. phpize8.1)
+$ ./configure --enable-rindow_openblas --with-rindow_matlib=/path/to/rindow-matlib --with-php-config=php-configX.X (ex. php-config8.1)
 $ make clean
 $ make
 $ make test
@@ -84,8 +84,8 @@ Add the "extension=rindow_openblas" entry to php.ini or Make the file rindow_ope
 If you want an easier install, use the following spell instead of "make install" and creating an ini file.
 
 ```shell
-$ sh ./packaging.sh 8.1
-$ sudo apt install ./rindow-openblas-php8.1_X.X.X-X+ubuntuXX.XX_amd64.deb
+$ sh ./packaging.sh X.X   (ex. sh ./packaging.sh 8.1)
+$ sudo apt install ./rindow-openblas-phpX.X_X.X.X_amd64.deb (ex. ./rindow-openblas-php8.1_...)
 ```
 
 How to build from source code on Windows

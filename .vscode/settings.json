@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "stdint.h": "c",
-        "cmath": "c"
+        "cmath": "c",
+        "xlocale": "c"
     }
 }

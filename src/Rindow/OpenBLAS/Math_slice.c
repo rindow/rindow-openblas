@@ -41,7 +41,6 @@ static PHP_METHOD(Math, slice)
     zend_long sizeAxis1;
     zend_long startAxis2;
     zend_long sizeAxis2;
-    zend_long i0,i1,i2;
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 18, 18)
         Z_PARAM_BOOL(reverse)
@@ -150,13 +149,13 @@ static PHP_METHOD(Math, slice)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataY,bufferY,offsetY)
-            rindow_matlib_s_slice(reverse,addMode,m,n,k,size,pDataA,incA,pDataY,incY,startAxis0,sizeAxis0,startAxis1,sizeAxis1,startAxis2,sizeAxis2);
+            rindow_matlib_s_slice(reverse,addMode,(index_t)m,(index_t)n,(index_t)k,(index_t)size,pDataA,(index_t)incA,pDataY,(index_t)incY,(index_t)startAxis0,(index_t)sizeAxis0,(index_t)startAxis1,(index_t)sizeAxis1,(index_t)startAxis2,(index_t)sizeAxis2);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataY,bufferY,offsetY)
-            rindow_matlib_d_slice(reverse,addMode,m,n,k,size,pDataA,incA,pDataY,incY,startAxis0,sizeAxis0,startAxis1,sizeAxis1,startAxis2,sizeAxis2);
+            rindow_matlib_d_slice(reverse,addMode,(index_t)m,(index_t)n,(index_t)k,(index_t)size,pDataA,(index_t)incA,pDataY,(index_t)incY,(index_t)startAxis0,(index_t)sizeAxis0,(index_t)startAxis1,(index_t)sizeAxis1,(index_t)startAxis2,(index_t)sizeAxis2);
             break;
         }
         default:{
@@ -165,9 +164,9 @@ static PHP_METHOD(Math, slice)
                 zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
                 return;
             }
-            void *pDataA = rindow_matlib_common_get_address(bufferA->dtype, bufferA->data,offsetA);
-            void *pDataY = rindow_matlib_common_get_address(bufferY->dtype, bufferY->data,offsetY);
-            rindow_matlib_i_slice(reverse,addMode,m,n,k,size,bufferA->dtype,pDataA,incA,pDataY,incY,startAxis0,sizeAxis0,startAxis1,sizeAxis1,startAxis2,sizeAxis2);
+            void *pDataA = rindow_matlib_common_get_address((dtype_t)bufferA->dtype, bufferA->data,(index_t)offsetA);
+            void *pDataY = rindow_matlib_common_get_address((dtype_t)bufferY->dtype, bufferY->data,(index_t)offsetY);
+            rindow_matlib_i_slice(reverse,addMode,(index_t)m,(index_t)n,(index_t)k,(index_t)size,(dtype_t)bufferA->dtype,pDataA,(index_t)incA,pDataY,(index_t)incY,(index_t)startAxis0,(index_t)sizeAxis0,(index_t)startAxis1,(index_t)sizeAxis1,(index_t)startAxis2,(index_t)sizeAxis2);
             break;
         }
     }

@@ -75,13 +75,13 @@ static PHP_METHOD(Math, repeat)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataB,bufferB,offsetB)
-            rindow_matlib_s_repeat(m,k,repeats,pDataA,pDataB);
+            rindow_matlib_s_repeat((index_t)m,(index_t)k,(index_t)repeats,pDataA,pDataB);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataB,bufferB,offsetB)
-            rindow_matlib_d_repeat(m,k,repeats,pDataA,pDataB);
+            rindow_matlib_d_repeat((index_t)m,(index_t)k,(index_t)repeats,pDataA,pDataB);
             break;
         }
         default:{
@@ -90,9 +90,9 @@ static PHP_METHOD(Math, repeat)
                 zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
                 return;
             }
-            void *pDataA = rindow_matlib_common_get_address(bufferA->dtype, bufferA->data,offsetA);
-            void *pDataB = rindow_matlib_common_get_address(bufferB->dtype, bufferB->data,offsetB);
-            rindow_matlib_i_repeat(m,k,repeats,bufferA->dtype,pDataA,pDataB);
+            void *pDataA = rindow_matlib_common_get_address((dtype_t)bufferA->dtype, bufferA->data,(index_t)offsetA);
+            void *pDataB = rindow_matlib_common_get_address((dtype_t)bufferB->dtype, bufferB->data,(index_t)offsetB);
+            rindow_matlib_i_repeat((index_t)m,(index_t)k,(index_t)repeats,(dtype_t)bufferA->dtype,pDataA,pDataB);
             break;
         }
     }

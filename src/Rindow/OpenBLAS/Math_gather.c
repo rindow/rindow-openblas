@@ -111,14 +111,14 @@ static PHP_METHOD(Math, gather)
 
     switch (bufferA->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
-            void *pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data,offsetX);
+            void *pDataX = rindow_matlib_common_get_address((dtype_t)bufferX->dtype, bufferX->data,(index_t)offsetX);
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataB,bufferB,offsetB)
             if(pDataX==NULL) {
                 zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
                 return;
             }
-            int32_t errcode = rindow_matlib_s_gather(reverse,addMode,n,k,numClass,bufferX->dtype,pDataX,pDataA,pDataB);
+            int32_t errcode = rindow_matlib_s_gather(reverse,addMode,(index_t)n,(index_t)k,(index_t)numClass,(dtype_t)bufferX->dtype,pDataX,pDataA,pDataB);
             if(errcode) {
                 if(errcode == RINDOW_MATLIB_E_UNSUPPORTED_DATA_TYPE) {
                     zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
@@ -134,14 +134,14 @@ static PHP_METHOD(Math, gather)
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
-            void *pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data,offsetX);
+            void *pDataX = rindow_matlib_common_get_address((dtype_t)bufferX->dtype, bufferX->data,(index_t)offsetX);
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataB,bufferB,offsetB)
             if(pDataX==NULL) {
                 zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
                 return;
             }
-            int32_t errcode = rindow_matlib_d_gather(reverse,addMode,n,k,numClass,bufferX->dtype,pDataX,pDataA,pDataB);
+            int32_t errcode = rindow_matlib_d_gather(reverse,addMode,(index_t)n,(index_t)k,(index_t)numClass,(dtype_t)bufferX->dtype,pDataX,pDataA,pDataB);
             if(errcode) {
                 if(errcode == RINDOW_MATLIB_E_UNSUPPORTED_DATA_TYPE) {
                     zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
@@ -162,14 +162,14 @@ static PHP_METHOD(Math, gather)
                 zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
                 return;
             }
-            void *pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data,offsetX);
-            void *pDataA = rindow_matlib_common_get_address(bufferA->dtype, bufferA->data,offsetA);
-            void *pDataB = rindow_matlib_common_get_address(bufferB->dtype, bufferB->data,offsetB);
+            void *pDataX = rindow_matlib_common_get_address((dtype_t)bufferX->dtype, bufferX->data,(index_t)offsetX);
+            void *pDataA = rindow_matlib_common_get_address((dtype_t)bufferA->dtype, bufferA->data,(index_t)offsetA);
+            void *pDataB = rindow_matlib_common_get_address((dtype_t)bufferB->dtype, bufferB->data,(index_t)offsetB);
             if(pDataX==NULL) {
                 zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
                 return;
             }
-            int32_t errcode = rindow_matlib_i_gather(reverse,addMode,n,k,numClass,bufferX->dtype,pDataX,bufferA->dtype,pDataA,pDataB);
+            int32_t errcode = rindow_matlib_i_gather(reverse,addMode,(index_t)n,(index_t)k,(index_t)numClass,(dtype_t)bufferX->dtype,pDataX,(dtype_t)bufferA->dtype,pDataA,pDataB);
             if(errcode) {
                 if(errcode == RINDOW_MATLIB_E_UNSUPPORTED_DATA_TYPE) {
                     zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
@@ -299,14 +299,14 @@ static PHP_METHOD(Math, reduceGather)
 
     switch (bufferA->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
-            void *pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data,offsetX);
+            void *pDataX = rindow_matlib_common_get_address((dtype_t)bufferX->dtype, bufferX->data,(index_t)offsetX);
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataB,bufferB,offsetB)
             if(pDataX==NULL) {
                 zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
                 return;
             }
-            int32_t errcode = rindow_matlib_s_reducegather(reverse,addMode,m,n,numClass,bufferX->dtype,pDataX,pDataA,pDataB);
+            int32_t errcode = rindow_matlib_s_reducegather(reverse,addMode,(index_t)m,(index_t)n,(index_t)numClass,(dtype_t)bufferX->dtype,pDataX,pDataA,pDataB);
             if(errcode) {
                 if(errcode == RINDOW_MATLIB_E_UNSUPPORTED_DATA_TYPE) {
                     zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
@@ -322,14 +322,14 @@ static PHP_METHOD(Math, reduceGather)
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
-            void *pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data,offsetX);
+            void *pDataX = rindow_matlib_common_get_address((dtype_t)bufferX->dtype, bufferX->data,(index_t)offsetX);
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataB,bufferB,offsetB)
             if(pDataX==NULL) {
                 zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
                 return;
             }
-            int32_t errcode = rindow_matlib_d_reducegather(reverse,addMode,m,n,numClass,bufferX->dtype,pDataX,pDataA,pDataB);
+            int32_t errcode = rindow_matlib_d_reducegather(reverse,addMode,(index_t)m,(index_t)n,(index_t)numClass,(dtype_t)bufferX->dtype,pDataX,pDataA,pDataB);
             if(errcode) {
                 if(errcode == RINDOW_MATLIB_E_UNSUPPORTED_DATA_TYPE) {
                     zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
@@ -350,14 +350,14 @@ static PHP_METHOD(Math, reduceGather)
                 zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
                 return;
             }
-            void *pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data,offsetX);
-            void *pDataA = rindow_matlib_common_get_address(bufferA->dtype, bufferA->data,offsetA);
-            void *pDataB = rindow_matlib_common_get_address(bufferB->dtype, bufferB->data,offsetB);
+            void *pDataX = rindow_matlib_common_get_address((dtype_t)bufferX->dtype, bufferX->data,(index_t)offsetX);
+            void *pDataA = rindow_matlib_common_get_address((dtype_t)bufferA->dtype, bufferA->data,(index_t)offsetA);
+            void *pDataB = rindow_matlib_common_get_address((dtype_t)bufferB->dtype, bufferB->data,(index_t)offsetB);
             if(pDataX==NULL) {
                 zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
                 return;
             }
-            int32_t errcode = rindow_matlib_i_reducegather(reverse,addMode,m,n,numClass,bufferX->dtype,pDataX,bufferA->dtype,pDataA,pDataB);
+            int32_t errcode = rindow_matlib_i_reducegather(reverse,addMode,(index_t)m,(index_t)n,(index_t)numClass,(dtype_t)bufferX->dtype,pDataX,(dtype_t)bufferA->dtype,pDataA,pDataB);
             if(errcode) {
                 if(errcode == RINDOW_MATLIB_E_UNSUPPORTED_DATA_TYPE) {
                     zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);

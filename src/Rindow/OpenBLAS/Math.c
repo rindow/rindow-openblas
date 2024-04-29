@@ -20,6 +20,11 @@
 
 #include "../../../matlib.c"
 
+typedef int32_t dtype_t;
+typedef int32_t index_t;
+typedef int32_t ndim_t;
+typedef int32_t trans_t;
+
 //static float s_max(long n, float *x, long incX)
 //{
 //    long i;
@@ -286,6 +291,61 @@ int php_rindow_openblas_val2float(
 //}
 
 /* Method Rindow\OpenBLAS\Math::
+    public function getNumThreads() : int
+ {{{ */
+static PHP_METHOD(Math, getNumThreads)
+{
+    zend_long n;
+    n = (zend_long)rindow_matlib_common_get_num_threads();
+    RETURN_LONG(n);
+}
+/* }}} */
+
+/* Method Rindow\OpenBLAS\Math::
+    public function getNumProcs() : int
+ {{{ */
+static PHP_METHOD(Math, getNumProcs)
+{
+    zend_long n;
+    n = (zend_long)rindow_matlib_common_get_nprocs();
+    RETURN_LONG(n);
+}
+/* }}} */
+
+/* Method Rindow\OpenBLAS\Math::
+    public function getConfig() : string
+ {{{ */
+static PHP_METHOD(Math, getConfig)
+{
+    char *s;
+    s = rindow_matlib_common_get_version();
+    RETURN_STRING(s);
+}
+/* }}} */
+
+/* Method Rindow\OpenBLAS\Math::
+    public function getParallel() : int
+ {{{ */
+static PHP_METHOD(Math, getParallel)
+{
+    zend_long n;
+    n = (zend_long)rindow_matlib_common_get_parallel();
+    RETURN_LONG(n);
+}
+/* }}} */
+
+/* Method Rindow\OpenBLAS\Math::
+    public function getVersion() : string
+ {{{ */
+static PHP_METHOD(Math, getVersion)
+{
+    char *s;
+    s = rindow_matlib_common_get_version();
+    RETURN_STRING(s);
+}
+/* }}} */
+
+/* Method Rindow\OpenBLAS\Math::
     public function sum(
         int $n,
         Buffer $X, int $offsetX, int $incX ) : float
@@ -321,12 +381,12 @@ static PHP_METHOD(Math, sum)
     switch (buffer->dtype) {
         case php_interop_polite_math_matrix_dtype_float32:{
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,buffer,offsetX)
-            result = rindow_matlib_s_sum(n,pDataX,incX);
+            result = rindow_matlib_s_sum((index_t)n,pDataX,(index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64:{
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,buffer,offsetX)
-            result = rindow_matlib_d_sum(n,pDataX,incX);
+            result = rindow_matlib_d_sum((index_t)n,pDataX,(index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_int8:
@@ -338,8 +398,8 @@ static PHP_METHOD(Math, sum)
         case php_interop_polite_math_matrix_dtype_int64:
         case php_interop_polite_math_matrix_dtype_uint64:
         case php_interop_polite_math_matrix_dtype_bool: {
-            void *pDataX = rindow_matlib_common_get_address(buffer->dtype,buffer->data,offsetX);
-            result = (double)rindow_matlib_i_sum(buffer->dtype, n, pDataX, incX);
+            void *pDataX = rindow_matlib_common_get_address((dtype_t)buffer->dtype,buffer->data,(index_t)offsetX);
+            result = (double)rindow_matlib_i_sum((dtype_t)buffer->dtype, (index_t)n, pDataX, (index_t)incX);
             break;
         }
         default:{
@@ -363,10 +423,6 @@ static PHP_METHOD(Math, imax)
     zval* x=NULL;
     zend_long offsetX;
     zend_long incX;
-    float  *pFloatX;
-    double *pDoubleX;
-    float  floatMax;
-    double doubleMax;
     zend_long resultIdx;
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 4, 4)
@@ -389,24 +445,23 @@ static PHP_METHOD(Math, imax)
         return;
     }
     switch (buffer->dtype) {
-        zend_long i;
         case php_interop_polite_math_matrix_dtype_float32:{
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,buffer,offsetX)
-            resultIdx = rindow_matlib_s_imax(n,pDataX,incX);
+            resultIdx = rindow_matlib_s_imax((index_t)n,pDataX,(index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64:{
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,buffer,offsetX)
-            resultIdx = rindow_matlib_d_imax(n,pDataX,incX);
+            resultIdx = rindow_matlib_d_imax((index_t)n,pDataX,(index_t)incX);
             break;
         }
         default: {
-            if(!rindow_matlib_common_dtype_is_int(buffer->dtype)) {
+            if(!rindow_matlib_common_dtype_is_int((dtype_t)buffer->dtype)) {
                 zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
                 return;
             }
-            void *pDataX = rindow_matlib_common_get_address(buffer->dtype,buffer->data,offsetX);
-            resultIdx = rindow_matlib_i_imax(buffer->dtype, n, pDataX, incX);
+            void *pDataX = rindow_matlib_common_get_address((dtype_t)buffer->dtype,buffer->data,(index_t)offsetX);
+            resultIdx = rindow_matlib_i_imax((dtype_t)buffer->dtype, (index_t)n, pDataX, (index_t)incX);
             break;
         }
     }
@@ -426,10 +481,6 @@ static PHP_METHOD(Math, imin)
     zval* x=NULL;
     zend_long offsetX;
     zend_long incX;
-    float  *pFloatX;
-    double *pDoubleX;
-    float  floatMin;
-    double doubleMin;
     zend_long resultIdx;
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 4, 4)
@@ -452,24 +503,23 @@ static PHP_METHOD(Math, imin)
         return;
     }
     switch (buffer->dtype) {
-        zend_long i;
         case php_interop_polite_math_matrix_dtype_float32:{
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,buffer,offsetX)
-            resultIdx = rindow_matlib_s_imin(n,pDataX,incX);
+            resultIdx = rindow_matlib_s_imin((index_t)n,pDataX,(index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64:{
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,buffer,offsetX)
-            resultIdx = rindow_matlib_d_imin(n,pDataX,incX);
+            resultIdx = rindow_matlib_d_imin((index_t)n,pDataX,(index_t)incX);
             break;
         }
         default: {
-            if(!rindow_matlib_common_dtype_is_int(buffer->dtype)) {
+            if(!rindow_matlib_common_dtype_is_int((dtype_t)buffer->dtype)) {
                 zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
                 return;
             }
-            void *pDataX = rindow_matlib_common_get_address(buffer->dtype,buffer->data,offsetX);
-            resultIdx = rindow_matlib_i_imin(buffer->dtype, n, pDataX, incX);
+            void *pDataX = rindow_matlib_common_get_address((dtype_t)buffer->dtype,buffer->data,(index_t)offsetX);
+            resultIdx = rindow_matlib_i_imin((dtype_t)buffer->dtype, (index_t)n, pDataX, (index_t)incX);
             break;
         }
     }
@@ -521,12 +571,12 @@ static PHP_METHOD(Math, increment)
     switch (buffer->dtype) {
         case php_interop_polite_math_matrix_dtype_float32:{
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,buffer,offsetX)
-            rindow_matlib_s_increment(n, pDataX, incX, alpha, beta);
+            rindow_matlib_s_increment((index_t)n, pDataX, (index_t)incX, (float)alpha, (float)beta);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64:{
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,buffer,offsetX)
-            rindow_matlib_d_increment(n, pDataX, incX, alpha, beta);
+            rindow_matlib_d_increment((index_t)n, pDataX, (index_t)incX, (double)alpha, (double)beta);
             break;
         }
         default:{
@@ -556,7 +606,6 @@ static PHP_METHOD(Math, reciprocal)
     zval* x=NULL;
     zend_long offsetX;
     zend_long incX;
-    zend_long i;
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 6, 6)
         Z_PARAM_LONG(n)
@@ -582,12 +631,12 @@ static PHP_METHOD(Math, reciprocal)
     switch (buffer->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,buffer,offsetX)
-            rindow_matlib_s_reciprocal(n, pDataX, incX, alpha, beta);
+            rindow_matlib_s_reciprocal((index_t)n, pDataX, (index_t)incX, (float)alpha, (float)beta);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,buffer,offsetX)
-            rindow_matlib_d_reciprocal(n, pDataX, incX, alpha, beta);
+            rindow_matlib_d_reciprocal((index_t)n, pDataX, (index_t)incX, (double)alpha, (double)beta);
             break;
         }
         default: {
@@ -668,13 +717,13 @@ static PHP_METHOD(Math, maximum)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
-            rindow_matlib_s_maximum(m, n, pDataA, ldA, pDataX, incX);
+            rindow_matlib_s_maximum((index_t)m, (index_t)n, pDataA, (index_t)ldA, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
-            rindow_matlib_d_maximum(m, n, pDataA, ldA, pDataX, incX);
+            rindow_matlib_d_maximum((index_t)m, (index_t)n, pDataA, (index_t)ldA, pDataX, (index_t)incX);
             break;
         }
         default: {
@@ -756,13 +805,13 @@ static PHP_METHOD(Math, minimum)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
-            rindow_matlib_s_minimum(m, n, pDataA, ldA, pDataX, incX);
+            rindow_matlib_s_minimum((index_t)m, (index_t)n, pDataA, (index_t)ldA, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
-            rindow_matlib_d_minimum(m, n, pDataA, ldA, pDataX, incX);
+            rindow_matlib_d_minimum((index_t)m, (index_t)n, pDataA, (index_t)ldA, pDataX, (index_t)incX);
             break;
         }
         default: {
@@ -843,13 +892,13 @@ static PHP_METHOD(Math, greater)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
-            rindow_matlib_s_greater(m, n, pDataA, ldA, pDataX, incX);
+            rindow_matlib_s_greater((index_t)m, (index_t)n, pDataA, (index_t)ldA, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
-            rindow_matlib_d_greater(m, n, pDataA, ldA, pDataX, incX);
+            rindow_matlib_d_greater((index_t)m, (index_t)n, pDataA, (index_t)ldA, pDataX, (index_t)incX);
             break;
         }
         default: {
@@ -930,13 +979,13 @@ static PHP_METHOD(Math, greaterEqual)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
-            rindow_matlib_s_greater_equal(m, n, pDataA, ldA, pDataX, incX);
+            rindow_matlib_s_greater_equal((index_t)m, (index_t)n, pDataA, (index_t)ldA, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
-            rindow_matlib_d_greater_equal(m, n, pDataA, ldA, pDataX, incX);
+            rindow_matlib_d_greater_equal((index_t)m, (index_t)n, pDataA, (index_t)ldA, pDataX, (index_t)incX);
             break;
         }
         default: {
@@ -1017,13 +1066,13 @@ static PHP_METHOD(Math, less)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
-            rindow_matlib_s_less(m, n, pDataA, ldA, pDataX, incX);
+            rindow_matlib_s_less((index_t)m, (index_t)n, pDataA, (index_t)ldA, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
-            rindow_matlib_d_less(m, n, pDataA, ldA, pDataX, incX);
+            rindow_matlib_d_less((index_t)m, (index_t)n, pDataA, (index_t)ldA, pDataX, (index_t)incX);
             break;
         }
         default: {
@@ -1105,13 +1154,13 @@ static PHP_METHOD(Math, lessEqual)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
-            rindow_matlib_s_less_equal(m, n, pDataA, ldA, pDataX, incX);
+            rindow_matlib_s_less_equal((index_t)m, (index_t)n, pDataA, (index_t)ldA, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
-            rindow_matlib_d_less_equal(m, n, pDataA, ldA, pDataX, incX);
+            rindow_matlib_d_less_equal((index_t)m, (index_t)n, pDataA, (index_t)ldA, pDataX, (index_t)incX);
             break;
         }
         default: {
@@ -1209,13 +1258,13 @@ static PHP_METHOD(Math, multiply)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
-            rindow_matlib_s_multiply(transCode, m, n, pDataX, incX, pDataA, ldA);
+            rindow_matlib_s_multiply((trans_t)transCode, (index_t)m, (index_t)n, pDataX, (index_t)incX, pDataA, (index_t)ldA);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
-            rindow_matlib_d_multiply(transCode, m, n, pDataX, incX, pDataA, ldA);
+            rindow_matlib_d_multiply((trans_t)transCode, (index_t)m, (index_t)n, pDataX, (index_t)incX, pDataA, (index_t)ldA);
             break;
         }
         default: {
@@ -1313,13 +1362,13 @@ static PHP_METHOD(Math, add)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
-            rindow_matlib_s_add(transCode, m, n, (float)alpha, pDataX, incX, pDataA, ldA);
+            rindow_matlib_s_add((trans_t)transCode, (index_t)m, (index_t)n, (float)alpha, pDataX, (index_t)incX, pDataA, (index_t)ldA);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
-            rindow_matlib_d_add(transCode, m, n, (double)alpha, pDataX, incX, pDataA, ldA);
+            rindow_matlib_d_add((trans_t)transCode, (index_t)m, (index_t)n, (double)alpha, pDataX, (index_t)incX, pDataA, (index_t)ldA);
             break;
         }
         default: {
@@ -1414,13 +1463,13 @@ static PHP_METHOD(Math, duplicate)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
-            rindow_matlib_s_duplicate(transCode, m, n, pDataX, incX, pDataA, ldA);
+            rindow_matlib_s_duplicate((trans_t)transCode, (index_t)m, (index_t)n, pDataX, (index_t)incX, pDataA, (index_t)ldA);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
-            rindow_matlib_d_duplicate(transCode, m, n, pDataX, incX, pDataA, ldA);
+            rindow_matlib_d_duplicate((trans_t)transCode, (index_t)m, (index_t)n, pDataX, (index_t)incX, pDataA, (index_t)ldA);
             break;
         }
         default: {
@@ -1469,12 +1518,12 @@ static PHP_METHOD(Math, square)
     switch (buffer->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,buffer,offsetX)
-            rindow_matlib_s_square(n, pDataX, incX);
+            rindow_matlib_s_square((index_t)n, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,buffer,offsetX)
-            rindow_matlib_d_square(n, pDataX, incX);
+            rindow_matlib_d_square((index_t)n, pDataX, (index_t)incX);
             break;
         }
         default: {
@@ -1500,7 +1549,6 @@ static PHP_METHOD(Math, sqrt)
     zval* x=NULL;
     zend_long offsetX;
     zend_long incX;
-    zend_long i;
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 4, 4)
         Z_PARAM_LONG(n)
@@ -1524,12 +1572,12 @@ static PHP_METHOD(Math, sqrt)
     switch (buffer->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,buffer,offsetX)
-            rindow_matlib_s_sqrt(n, pDataX, incX);
+            rindow_matlib_s_sqrt((index_t)n, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,buffer,offsetX)
-            rindow_matlib_d_sqrt(n, pDataX, incX);
+            rindow_matlib_d_sqrt((index_t)n, pDataX, (index_t)incX);
             break;
         }
         default: {
@@ -1559,7 +1607,6 @@ static PHP_METHOD(Math, rsqrt)
     zval* x=NULL;
     zend_long offsetX;
     zend_long incX;
-    zend_long i;
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 6, 6)
         Z_PARAM_LONG(n)
@@ -1585,12 +1632,12 @@ static PHP_METHOD(Math, rsqrt)
     switch (buffer->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,buffer,offsetX)
-            rindow_matlib_s_rsqrt(n, (float)alpha, pDataX, incX, (float)beta);
+            rindow_matlib_s_rsqrt((index_t)n, (float)alpha, pDataX, (index_t)incX, (float)beta);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,buffer,offsetX)
-            rindow_matlib_d_rsqrt(n, (double)alpha, pDataX, incX, (double)beta);
+            rindow_matlib_d_rsqrt((index_t)n, (double)alpha, pDataX, (index_t)incX, (double)beta);
             break;
         }
         default: {
@@ -1625,7 +1672,6 @@ static PHP_METHOD(Math, pow)
     zval* x=NULL;
     zend_long offsetX;
     zend_long incX;
-    zend_long i;
     zend_long cols;
     zend_long transCode;
 
@@ -1683,13 +1729,13 @@ static PHP_METHOD(Math, pow)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
-            rindow_matlib_s_pow(transCode, m, n, pDataA, ldA, pDataX, incX);
+            rindow_matlib_s_pow((trans_t)transCode, (index_t)m, (index_t)n, pDataA, (index_t)ldA, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
-            rindow_matlib_d_pow(transCode, m, n, pDataA, ldA, pDataX, incX);
+            rindow_matlib_d_pow((trans_t)transCode, (index_t)m, (index_t)n, pDataA, (index_t)ldA, pDataX, (index_t)incX);
             break;
         }
         default: {
@@ -1715,7 +1761,6 @@ static PHP_METHOD(Math, exp)
     zval* x=NULL;
     zend_long offsetX;
     zend_long incX;
-    zend_long i;
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 4, 4)
         Z_PARAM_LONG(n)
@@ -1739,12 +1784,12 @@ static PHP_METHOD(Math, exp)
     switch (buffer->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,buffer,offsetX)
-            rindow_matlib_s_exp(n, pDataX, incX);
+            rindow_matlib_s_exp((index_t)n, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,buffer,offsetX)
-            rindow_matlib_d_exp(n, pDataX, incX);
+            rindow_matlib_d_exp((index_t)n, pDataX, (index_t)incX);
             break;
         }
         default: {
@@ -1770,7 +1815,6 @@ static PHP_METHOD(Math, log)
     zval* x=NULL;
     zend_long offsetX;
     zend_long incX;
-    zend_long i;
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 4, 4)
         Z_PARAM_LONG(n)
@@ -1794,12 +1838,12 @@ static PHP_METHOD(Math, log)
     switch (buffer->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,buffer,offsetX)
-            rindow_matlib_s_log(n, pDataX, incX);
+            rindow_matlib_s_log((index_t)n, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,buffer,offsetX)
-            rindow_matlib_d_log(n, pDataX, incX);
+            rindow_matlib_d_log((index_t)n, pDataX, (index_t)incX);
             break;
         }
         default: {
@@ -1825,7 +1869,6 @@ static PHP_METHOD(Math, tanh)
     zval* x=NULL;
     zend_long offsetX;
     zend_long incX;
-    zend_long i;
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 4, 4)
         Z_PARAM_LONG(n)
@@ -1849,12 +1892,12 @@ static PHP_METHOD(Math, tanh)
     switch (buffer->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,buffer,offsetX)
-            rindow_matlib_s_tanh(n, pDataX, incX);
+            rindow_matlib_s_tanh((index_t)n, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,buffer,offsetX)
-            rindow_matlib_d_tanh(n, pDataX, incX);
+            rindow_matlib_d_tanh((index_t)n, pDataX, (index_t)incX);
             break;
         }
         default: {
@@ -1880,7 +1923,6 @@ static PHP_METHOD(Math, sin)
     zval* x=NULL;
     zend_long offsetX;
     zend_long incX;
-    zend_long i;
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 4, 4)
         Z_PARAM_LONG(n)
@@ -1904,12 +1946,12 @@ static PHP_METHOD(Math, sin)
     switch (buffer->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,buffer,offsetX)
-            rindow_matlib_s_sin(n, pDataX, incX);
+            rindow_matlib_s_sin((index_t)n, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,buffer,offsetX)
-            rindow_matlib_d_sin(n, pDataX, incX);
+            rindow_matlib_d_sin((index_t)n, pDataX, (index_t)incX);
             break;
         }
         default: {
@@ -1935,7 +1977,6 @@ static PHP_METHOD(Math, cos)
     zval* x=NULL;
     zend_long offsetX;
     zend_long incX;
-    zend_long i;
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 4, 4)
         Z_PARAM_LONG(n)
@@ -1959,12 +2000,12 @@ static PHP_METHOD(Math, cos)
     switch (buffer->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,buffer,offsetX)
-            rindow_matlib_s_cos(n, pDataX, incX);
+            rindow_matlib_s_cos((index_t)n, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,buffer,offsetX)
-            rindow_matlib_d_cos(n, pDataX, incX);
+            rindow_matlib_d_cos((index_t)n, pDataX, (index_t)incX);
             break;
         }
         default: {
@@ -1990,7 +2031,6 @@ static PHP_METHOD(Math, tan)
     zval* x=NULL;
     zend_long offsetX;
     zend_long incX;
-    zend_long i;
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 4, 4)
         Z_PARAM_LONG(n)
@@ -2014,12 +2054,12 @@ static PHP_METHOD(Math, tan)
     switch (buffer->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,buffer,offsetX)
-            rindow_matlib_s_tan(n, pDataX, incX);
+            rindow_matlib_s_tan((index_t)n, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,buffer,offsetX)
-            rindow_matlib_d_tan(n, pDataX, incX);
+            rindow_matlib_d_tan((index_t)n, pDataX, (index_t)incX);
             break;
         }
         default: {
@@ -2068,12 +2108,12 @@ static PHP_METHOD(Math, zeros)
     switch (buffer->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,buffer,offsetX)
-            rindow_matlib_s_zeros(n, pDataX, incX);
+            rindow_matlib_s_zeros((index_t)n, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,buffer,offsetX)
-            rindow_matlib_d_zeros(n, pDataX, incX);
+            rindow_matlib_d_zeros((index_t)n, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_int8:
@@ -2089,7 +2129,7 @@ static PHP_METHOD(Math, zeros)
             void *pDataX;
             valueSize = php_rindow_openblas_common_dtype_to_valuesize(buffer->dtype);
             pDataX = php_rindow_openblas_get_address(buffer,offsetX,valueSize);
-            rindow_matlib_i_zeros(buffer->dtype, n, pDataX, incX);
+            rindow_matlib_i_zeros((dtype_t)buffer->dtype, (index_t)n, pDataX, (index_t)incX);
             break;
         }
         default: {
@@ -2170,7 +2210,7 @@ static PHP_METHOD(Math, updateAddOnehot)
         zend_throw_exception(spl_ce_InvalidArgumentException, "Data type of BufferX must not be bool", 0);
         return;
     }
-    if(rindow_matlib_common_dtype_to_valuesize(bufferX->dtype)==0) {
+    if(rindow_matlib_common_dtype_to_valuesize((dtype_t)bufferX->dtype)==0) {
         zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of label number.", 0);
         return;
     }
@@ -2178,8 +2218,8 @@ static PHP_METHOD(Math, updateAddOnehot)
     switch (bufferY->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataY,bufferY,offsetY)
-            void* pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data, offsetX);
-            if(rindow_matlib_s_onehot(bufferX->dtype, m, n, pDataX, incX, (float)a, pDataY, ldY)) {
+            void* pDataX = rindow_matlib_common_get_address((dtype_t)bufferX->dtype, bufferX->data, (index_t)offsetX);
+            if(rindow_matlib_s_onehot((dtype_t)bufferX->dtype, (index_t)m, (index_t)n, pDataX, (index_t)incX, (float)a, pDataY, (index_t)ldY)) {
                 zend_throw_exception(spl_ce_RuntimeException, "Label number is out of bounds.", 0);
                 return;
             }
@@ -2187,8 +2227,8 @@ static PHP_METHOD(Math, updateAddOnehot)
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataY,bufferY,offsetY)
-            void* pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data, offsetX);
-            if(rindow_matlib_d_onehot(bufferX->dtype, m, n, pDataX, incX, (double)a, pDataY, ldY)) {
+            void* pDataX = rindow_matlib_common_get_address((dtype_t)bufferX->dtype, bufferX->data, (index_t)offsetX);
+            if(rindow_matlib_d_onehot((dtype_t)bufferX->dtype, (index_t)m, (index_t)n, pDataX, (index_t)incX, (double)a, pDataY, (index_t)ldY)) {
                 zend_throw_exception(spl_ce_RuntimeException, "Label number is out of bounds.", 0);
                 return;
             }
@@ -2248,12 +2288,12 @@ static PHP_METHOD(Math, softmax)
     switch (buffer->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,buffer,offsetA)
-            rindow_matlib_s_softmax(m, n, pDataA, ldA);
+            rindow_matlib_s_softmax((index_t)m, (index_t)n, pDataA, (index_t)ldA);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,buffer,offsetA)
-            rindow_matlib_d_softmax(m, n, pDataA, ldA);
+            rindow_matlib_d_softmax((index_t)m, (index_t)n, pDataA, (index_t)ldA);
             break;
         }
         default: {
@@ -2330,24 +2370,24 @@ static PHP_METHOD(Math, equal)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataY,bufferY,offsetY)
-            rindow_matlib_s_equal(n, pDataX, incX, pDataY, incY);
+            rindow_matlib_s_equal((index_t)n, pDataX, (index_t)incX, pDataY, (index_t)incY);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataY,bufferY,offsetY)
-            rindow_matlib_d_equal(n, pDataX, incX, pDataY, incY);
+            rindow_matlib_d_equal((index_t)n, pDataX, (index_t)incX, pDataY, (index_t)incY);
             break;
         }
         default: {
-            if(!rindow_matlib_common_dtype_is_int(bufferX->dtype)&&
-                !rindow_matlib_common_dtype_is_bool(bufferX->dtype)) {
+            if(!rindow_matlib_common_dtype_is_int((dtype_t)bufferX->dtype)&&
+                !rindow_matlib_common_dtype_is_bool((dtype_t)bufferX->dtype)) {
                 zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
                 return;
             }
-            void *pDataX = rindow_matlib_common_get_address(bufferX->dtype,bufferX->data,offsetX);
-            void *pDataY = rindow_matlib_common_get_address(bufferY->dtype,bufferY->data,offsetY);
-            rindow_matlib_i_equal(bufferX->dtype, n, pDataX, incX, pDataY, incY);
+            void *pDataX = rindow_matlib_common_get_address((dtype_t)bufferX->dtype,bufferX->data,(index_t)offsetX);
+            void *pDataY = rindow_matlib_common_get_address((dtype_t)bufferY->dtype,bufferY->data,(index_t)offsetY);
+            rindow_matlib_i_equal((dtype_t)bufferX->dtype, (index_t)n, pDataX, (index_t)incX, pDataY, (index_t)incY);
             break;
         }
     }
@@ -2420,24 +2460,24 @@ static PHP_METHOD(Math, notEqual)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataY,bufferY,offsetY)
-            rindow_matlib_s_notequal(n, pDataX, incX, pDataY, incY);
+            rindow_matlib_s_notequal((index_t)n, pDataX, (index_t)incX, pDataY, (index_t)incY);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataY,bufferY,offsetY)
-            rindow_matlib_d_notequal(n, pDataX, incX, pDataY, incY);
+            rindow_matlib_d_notequal((index_t)n, pDataX, (index_t)incX, pDataY, (index_t)incY);
             break;
         }
         default: {
-            if(!rindow_matlib_common_dtype_is_int(bufferX->dtype)&&
-                !rindow_matlib_common_dtype_is_bool(bufferX->dtype)) {
+            if(!rindow_matlib_common_dtype_is_int((dtype_t)bufferX->dtype)&&
+                !rindow_matlib_common_dtype_is_bool((dtype_t)bufferX->dtype)) {
                 zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
                 return;
             }
-            void *pDataX = rindow_matlib_common_get_address(bufferX->dtype,bufferX->data,offsetX);
-            void *pDataY = rindow_matlib_common_get_address(bufferY->dtype,bufferY->data,offsetY);
-            rindow_matlib_i_notequal(bufferX->dtype, n, pDataX, incX, pDataY, incY);
+            void *pDataX = rindow_matlib_common_get_address((dtype_t)bufferX->dtype,bufferX->data,(index_t)offsetX);
+            void *pDataY = rindow_matlib_common_get_address((dtype_t)bufferY->dtype,bufferY->data,(index_t)offsetY);
+            rindow_matlib_i_notequal((dtype_t)bufferX->dtype, (index_t)n, pDataX, (index_t)incX, pDataY, (index_t)incY);
             break;
         }
     }
@@ -2485,22 +2525,22 @@ static PHP_METHOD(Math, not)
     switch (bufferX->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
-            rindow_matlib_s_not(n, pDataX, incX);
+            rindow_matlib_s_not((index_t)n, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
-            rindow_matlib_d_not(n, pDataX, incX);
+            rindow_matlib_d_not((index_t)n, pDataX, (index_t)incX);
             break;
         }
         default: {
-            if(!rindow_matlib_common_dtype_is_int(bufferX->dtype)&&
-                !rindow_matlib_common_dtype_is_bool(bufferX->dtype)) {
+            if(!rindow_matlib_common_dtype_is_int((dtype_t)bufferX->dtype)&&
+                !rindow_matlib_common_dtype_is_bool((dtype_t)bufferX->dtype)) {
                 zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type.", 0);
                 return;
             }
-            void *pDataX = rindow_matlib_common_get_address(bufferX->dtype,bufferX->data,offsetX);
-            rindow_matlib_i_not(bufferX->dtype, n, pDataX, incX);
+            void *pDataX = rindow_matlib_common_get_address((dtype_t)bufferX->dtype,bufferX->data,(index_t)offsetX);
+            rindow_matlib_i_not((dtype_t)bufferX->dtype, (index_t)n, pDataX, (index_t)incX);
             break;
         }
     }
@@ -2569,10 +2609,10 @@ static PHP_METHOD(Math, astype)
 
 
     {
-        void *pDataX = rindow_matlib_common_get_address(bufferX->dtype,bufferX->data,offsetX);
-        void *pDataY = rindow_matlib_common_get_address(bufferY->dtype,bufferY->data,offsetY);
+        void *pDataX = rindow_matlib_common_get_address((dtype_t)bufferX->dtype,bufferX->data,(index_t)offsetX);
+        void *pDataY = rindow_matlib_common_get_address((dtype_t)bufferY->dtype,bufferY->data,(index_t)offsetY);
 
-        if(rindow_matlib_astype(n, bufferX->dtype, pDataX, incX, bufferY->dtype, pDataY, incY)) {
+        if(rindow_matlib_astype((index_t)n, (dtype_t)bufferX->dtype, pDataX, (index_t)incX, (dtype_t)bufferY->dtype, pDataY, (index_t)incY)) {
             zend_throw_exception(spl_ce_InvalidArgumentException, "Unsupported data type of X or Y.", 0);
             return;
         }
@@ -2675,13 +2715,13 @@ static PHP_METHOD(Math, matrixcopy)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataB,bufferB,offsetB)
-            rindow_matlib_s_matrixcopy(transCode, m, n, alpha, pDataA, ldA, pDataB, ldB);
+            rindow_matlib_s_matrixcopy((trans_t)transCode, (index_t)m, (index_t)n, (float)alpha, pDataA, (index_t)ldA, pDataB, (index_t)ldB);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataB,bufferB,offsetB)
-            rindow_matlib_d_matrixcopy(transCode, m, n, alpha, pDataA, ldA, pDataB, ldB);
+            rindow_matlib_d_matrixcopy((trans_t)transCode, (index_t)m, (index_t)n, (double)alpha, pDataA, (index_t)ldA, pDataB, (index_t)ldB);
             break;
         }
         default: {
@@ -2808,22 +2848,22 @@ static PHP_METHOD(Math, imagecopy)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataB,bufferB,offsetB)
-            rindow_matlib_s_imagecopy(height,width,channels,pDataA,pDataB,
-                channelsFirst,heightShift,widthShift,verticalFlip,horizontalFlip,rgbFlip);
+            rindow_matlib_s_imagecopy((index_t)height,(index_t)width,(index_t)channels,pDataA,pDataB,
+                channelsFirst,(index_t)heightShift,(index_t)widthShift,verticalFlip,horizontalFlip,rgbFlip);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataB,bufferB,offsetB)
-            rindow_matlib_d_imagecopy(height,width,channels,pDataA,pDataB,
-                channelsFirst,heightShift,widthShift,verticalFlip,horizontalFlip,rgbFlip);
+            rindow_matlib_d_imagecopy((index_t)height,(index_t)width,(index_t)channels,pDataA,pDataB,
+                channelsFirst,(index_t)heightShift,(index_t)widthShift,verticalFlip,horizontalFlip,rgbFlip);
             break;
         }
         case php_interop_polite_math_matrix_dtype_uint8: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(uint8_t,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(uint8_t,pDataB,bufferB,offsetB)
-            rindow_matlib_i8_imagecopy(height,width,channels,pDataA,pDataB,
-                channelsFirst,heightShift,widthShift,verticalFlip,horizontalFlip,rgbFlip);
+            rindow_matlib_i8_imagecopy((index_t)height,(index_t)width,(index_t)channels,pDataA,pDataB,
+                channelsFirst,(index_t)heightShift,(index_t)widthShift,verticalFlip,horizontalFlip,rgbFlip);
             break;
         }
         default: {
@@ -2892,9 +2932,9 @@ static PHP_METHOD(Math, fill)
     }
 
     {
-        void *value = rindow_matlib_common_get_address(bufferV->dtype, bufferV->data, offsetV);
-        void *x     = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data, offsetX);
-        rindow_matlib_fill(bufferX->dtype, n, value, x, incX);
+        void *value = rindow_matlib_common_get_address((dtype_t)bufferV->dtype, bufferV->data, (index_t)offsetV);
+        void *x     = rindow_matlib_common_get_address((dtype_t)bufferX->dtype, bufferX->data, (index_t)offsetX);
+        rindow_matlib_fill((dtype_t)bufferX->dtype, (index_t)n, value, x, (index_t)incX);
     }
 }
 /* }}} */
@@ -2917,7 +2957,6 @@ static PHP_METHOD(Math, nan2num)
     zend_long offsetX;
     zend_long incX;
     double alpha;
-    zend_long i;
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 5, 5)
         Z_PARAM_LONG(n)
@@ -2942,12 +2981,12 @@ static PHP_METHOD(Math, nan2num)
     switch (buffer->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,buffer,offsetX)
-            rindow_matlib_s_nan2num(n, pDataX, incX, (float)alpha);
+            rindow_matlib_s_nan2num((index_t)n, pDataX, (index_t)incX, (float)alpha);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,buffer,offsetX)
-            rindow_matlib_d_nan2num(n, pDataX, incX, (double)alpha);
+            rindow_matlib_d_nan2num((index_t)n, pDataX, (index_t)incX, (double)alpha);
             break;
         }
         default: {
@@ -2973,7 +3012,6 @@ static PHP_METHOD(Math, isnan)
     zval* x=NULL;
     zend_long offsetX;
     zend_long incX;
-    zend_long i;
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 4, 4)
         Z_PARAM_LONG(n)
@@ -2997,12 +3035,12 @@ static PHP_METHOD(Math, isnan)
     switch (buffer->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,buffer,offsetX)
-            rindow_matlib_s_isnan(n, pDataX, incX);
+            rindow_matlib_s_isnan((index_t)n, pDataX, (index_t)incX);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,buffer,offsetX)
-            rindow_matlib_d_isnan(n, pDataX, incX);
+            rindow_matlib_d_isnan((index_t)n, pDataX, (index_t)incX);
             break;
         }
         default: {
@@ -3121,15 +3159,15 @@ static PHP_METHOD(Math, searchsorted)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
-            void *pDataY = rindow_matlib_common_get_address(bufferY->dtype, bufferY->data,offsetY);
-            rindow_matlib_s_searchsorted(m,n,pDataA,ldA,pDataX,incX,right,bufferY->dtype,pDataY,incY);
+            void *pDataY = rindow_matlib_common_get_address((dtype_t)bufferY->dtype, bufferY->data,(index_t)offsetY);
+            rindow_matlib_s_searchsorted((index_t)m,(index_t)n,pDataA,(index_t)ldA,pDataX,(index_t)incX,right,(dtype_t)bufferY->dtype,pDataY,(index_t)incY);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
-            void *pDataY = rindow_matlib_common_get_address(bufferY->dtype, bufferY->data,offsetY);
-            rindow_matlib_d_searchsorted(m,n,pDataA,ldA,pDataX,incX,right,bufferY->dtype,pDataY,incY);
+            void *pDataY = rindow_matlib_common_get_address((dtype_t)bufferY->dtype, bufferY->data,(index_t)offsetY);
+            rindow_matlib_d_searchsorted((index_t)m,(index_t)n,pDataA,(index_t)ldA,pDataX,(index_t)incX,right,(dtype_t)bufferY->dtype,pDataY,(index_t)incY);
             break;
         }
         default: {
@@ -3214,13 +3252,13 @@ static PHP_METHOD(Math, cumsum)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataY,bufferY,offsetY)
-            rindow_matlib_s_cumsum(n,pDataX,incX,exclusive,reverse,pDataY,incY);
+            rindow_matlib_s_cumsum((index_t)n,pDataX,(index_t)incX,exclusive,reverse,pDataY,(index_t)incY);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataY,bufferY,offsetY)
-            rindow_matlib_d_cumsum(n,pDataX,incX,exclusive,reverse,pDataY,incY);
+            rindow_matlib_d_cumsum((index_t)n,pDataX,(index_t)incX,exclusive,reverse,pDataY,(index_t)incY);
             break;
         }
         default: {
@@ -3349,13 +3387,13 @@ static PHP_METHOD(Math, transpose)
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataB,bufferB,offsetB)
-            status = rindow_matlib_s_transpose(ndim, shapevals, permvals, pDataA, pDataB);
+            status = rindow_matlib_s_transpose((ndim_t)ndim, shapevals, permvals, pDataA, pDataB);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataB,bufferB,offsetB)
-            status = rindow_matlib_d_transpose(ndim, shapevals, permvals, pDataA, pDataB);
+            status = rindow_matlib_d_transpose((ndim_t)ndim, shapevals, permvals, pDataA, pDataB);
             break;
         }
         case php_interop_polite_math_matrix_dtype_bool:
@@ -3367,10 +3405,10 @@ static PHP_METHOD(Math, transpose)
         case php_interop_polite_math_matrix_dtype_uint32:
         case php_interop_polite_math_matrix_dtype_int64:
         case php_interop_polite_math_matrix_dtype_uint64: {
-            size_t value_bytes = rindow_matlib_common_dtype_to_valuesize(bufferA->dtype);
+            size_t value_bytes = rindow_matlib_common_dtype_to_valuesize((dtype_t)bufferA->dtype);
             void* pDataA = (int8_t*)(bufferA->data)+(value_bytes*offsetA);
             void* pDataB = (int8_t*)(bufferB->data)+(value_bytes*offsetB);
-            status = rindow_matlib_i_transpose(bufferA->dtype, ndim, shapevals, permvals, pDataA, pDataB);
+            status = rindow_matlib_i_transpose((dtype_t)bufferA->dtype, (ndim_t)ndim, shapevals, permvals, pDataA, pDataB);
             break;
         }
         default: {
@@ -3466,12 +3504,12 @@ static PHP_METHOD(Math, bandpart)
     switch (bufferA->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataA,bufferA,offsetA)
-            rindow_matlib_s_bandpart(m,n,k,pDataA,lower,upper);
+            rindow_matlib_s_bandpart((index_t)m,(index_t)n,(index_t)k,pDataA,(index_t)lower,(index_t)upper);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataA,bufferA,offsetA)
-            rindow_matlib_d_bandpart(m,n,k,pDataA,lower,upper);
+            rindow_matlib_d_bandpart((index_t)m,(index_t)n,(index_t)k,pDataA,(index_t)lower,(index_t)upper);
             break;
         }
         default: {
@@ -3862,10 +3900,10 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(ai_Math_searchsorted, 0, 0, 12)
     ZEND_ARG_INFO(0, m)
+    ZEND_ARG_INFO(0, n)
     ZEND_ARG_OBJ_INFO(0, a, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
     ZEND_ARG_INFO(0, offsetA)
     ZEND_ARG_INFO(0, incA)
-    ZEND_ARG_INFO(0, n)
     ZEND_ARG_OBJ_INFO(0, x, Interop\\Polite\\Math\\Matrix\\LinearBuffer, 0)
     ZEND_ARG_INFO(0, offsetX)
     ZEND_ARG_INFO(0, incX)
@@ -4075,9 +4113,17 @@ ZEND_BEGIN_ARG_INFO_EX(ai_Math_randomSequence, 0, 0, 6)
     ZEND_ARG_INFO(0, seed)
 ZEND_END_ARG_INFO()
 
-/* {{{ Rindow\OpenBLAS\Blas function entries */
+ZEND_BEGIN_ARG_INFO_EX(ai_Math_void, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+/* {{{ Rindow\OpenBLAS\Math function entries */
 static zend_function_entry php_rindow_openblas_math_me[] = {
     /* clang-format off */
+    PHP_ME(Math, getNumThreads,  ai_Math_void,           ZEND_ACC_PUBLIC)
+    PHP_ME(Math, getNumProcs,    ai_Math_void,           ZEND_ACC_PUBLIC)
+    PHP_ME(Math, getConfig,      ai_Math_void,           ZEND_ACC_PUBLIC)
+    PHP_ME(Math, getParallel,    ai_Math_void,           ZEND_ACC_PUBLIC)
+    PHP_ME(Math, getVersion,     ai_Math_void,           ZEND_ACC_PUBLIC)
     PHP_ME(Math, sum,            ai_Math_sum,            ZEND_ACC_PUBLIC)
     PHP_ME(Math, imax,           ai_Math_imax,           ZEND_ACC_PUBLIC)
     PHP_ME(Math, imin,           ai_Math_imin,           ZEND_ACC_PUBLIC)

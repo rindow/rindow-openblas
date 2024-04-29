@@ -47,3 +47,4 @@ pkgwork/
 *.deb
 composer.lock
 vendor/
+/.vscode

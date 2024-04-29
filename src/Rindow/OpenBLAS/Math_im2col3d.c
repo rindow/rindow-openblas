@@ -438,37 +438,37 @@ static PHP_METHOD(Math, im2col3d)
         return;
     }
 
-    void *pDataImages = rindow_matlib_common_get_address(images->dtype, images->data,images_offset);
-    void *pDataCols = rindow_matlib_common_get_address(cols->dtype, cols->data,cols_offset);
+    void *pDataImages = rindow_matlib_common_get_address((dtype_t)images->dtype, images->data,(index_t)images_offset);
+    void *pDataCols = rindow_matlib_common_get_address((dtype_t)cols->dtype, cols->data,(index_t)cols_offset);
 
     int32_t rc = rindow_matlib_im2col3d(
-        images->dtype,
+        (dtype_t)images->dtype,
         reverse,
         pDataImages,
-        images_size,
-        batches,
+        (index_t)images_size,
+        (index_t)batches,
 
-        im_d,
-        im_h,
-        im_w,
-        channels,
-        filter_d,
+        (index_t)im_d,
+        (index_t)im_h,
+        (index_t)im_w,
+        (index_t)channels,
+        (index_t)filter_d,
 
-        filter_h,
-        filter_w,
-        stride_d,
-        stride_h,
-        stride_w,
+        (index_t)filter_h,
+        (index_t)filter_w,
+        (index_t)stride_d,
+        (index_t)stride_h,
+        (index_t)stride_w,
 
         padding,
         channels_first,
-        dilation_d,
-        dilation_h,
-        dilation_w,
+        (index_t)dilation_d,
+        (index_t)dilation_h,
+        (index_t)dilation_w,
 
         cols_channels_first,
         pDataCols,
-        cols_size
+        (index_t)cols_size
     );
     switch(rc) {
         case 0: {

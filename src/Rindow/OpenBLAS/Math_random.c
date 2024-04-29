@@ -71,17 +71,17 @@ static PHP_METHOD(Math, randomUniform)
     switch(bufferX->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
-            rindow_matlib_s_randomuniform(n,pDataX,incX,(float)low_float,(float)high_float,seed);
+            rindow_matlib_s_randomuniform((index_t)n,pDataX,(index_t)incX,(float)low_float,(float)high_float,(int32_t)seed);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
-            rindow_matlib_d_randomuniform(n,pDataX,incX,(double)low_float,(double)high_float,seed);
+            rindow_matlib_d_randomuniform((index_t)n,pDataX,(index_t)incX,(double)low_float,(double)high_float,(int32_t)seed);
             break;
         }
         default: {
-            void *pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data,offsetX);
-            rindow_matlib_i_randomuniform(n,bufferX->dtype,pDataX,incX,(int32_t)low_int,(int32_t)high_int,seed);
+            void *pDataX = rindow_matlib_common_get_address((dtype_t)bufferX->dtype, bufferX->data,(index_t)offsetX);
+            rindow_matlib_i_randomuniform((index_t)n,(dtype_t)bufferX->dtype,pDataX,(index_t)incX,(int32_t)low_int,(int32_t)high_int,(int32_t)seed);
             break;
         }
     }
@@ -137,12 +137,12 @@ static PHP_METHOD(Math, randomNormal)
     switch(bufferX->dtype) {
         case php_interop_polite_math_matrix_dtype_float32: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(float,pDataX,bufferX,offsetX)
-            rindow_matlib_s_randomnormal(n,pDataX,incX,(float)mean,(float)scale,seed);
+            rindow_matlib_s_randomnormal((index_t)n,pDataX,(index_t)incX,(float)mean,(float)scale,(int32_t)seed);
             break;
         }
         case php_interop_polite_math_matrix_dtype_float64: {
             PHP_RINDOW_OPENBLAS_MATH_DEFDATA_TEMPLATE(double,pDataX,bufferX,offsetX)
-            rindow_matlib_d_randomnormal(n,pDataX,incX,(double)mean,(double)scale,seed);
+            rindow_matlib_d_randomnormal((index_t)n,pDataX,(index_t)incX,(double)mean,(double)scale,(int32_t)seed);
             break;
         }
         default: {
@@ -173,8 +173,6 @@ static PHP_METHOD(Math, randomSequence)
     zend_long offsetX;
     zend_long incX;
     zend_long seed;
-    int64_t *data;
-    zend_long i;
 
     ZEND_PARSE_PARAMETERS_START_EX(ZEND_PARSE_PARAMS_THROW, 6, 6)
         Z_PARAM_LONG(n)
@@ -204,7 +202,7 @@ static PHP_METHOD(Math, randomSequence)
         return;
     }
 
-    void *pDataX = rindow_matlib_common_get_address(bufferX->dtype, bufferX->data,offsetX);
-    rindow_matlib_i_randomsequence(n,size,bufferX->dtype,pDataX,incX,seed);
-}
+    void *pDataX = rindow_matlib_common_get_address((dtype_t)bufferX->dtype, bufferX->data,(index_t)offsetX);
+    rindow_matlib_i_randomsequence((index_t)n,(index_t)size,(dtype_t)bufferX->dtype,pDataX,(index_t)incX,(int32_t)seed);
+}   
 /* }}} */

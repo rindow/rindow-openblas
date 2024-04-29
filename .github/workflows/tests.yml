@@ -8,11 +8,13 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-22.04
+    env:
+      matlib: 1.0.0
 
     strategy:
       fail-fast: true
       matrix:
-        php: ['8.1','8.2','8.3']
+        php: ['7.2','8.2','8.3']
   
     steps:
       - name: Checkout codes
@@ -30,21 +32,20 @@ jobs:
 
       - name: setup OpenBLAS
         run: |
-          sudo apt update
           sudo apt install libopenblas-dev
           sudo apt install liblapacke-dev
 
       - name: Download rindow-matlib
         run: |
-          ( cd .. && git clone https://github.com/rindow/rindow-matlib )
-          ( cd ../rindow-matlib && git checkout 1.0.0 )
-          ( cd ../rindow-matlib && cmake -S . -B build )
+          wget https://github.com/rindow/rindow-matlib/archive/refs/tags/${matlib}.tar.gz
+          tar xvf ${matlib}.tar.gz
+          ( cd rindow-matlib-${matlib} && cmake -S . -B build )
 
       - name: Build
         run: |
           composer update
           phpize${{ matrix.php }}
-          ./configure --enable-rindow_openblas --with-rindow_matlib=../rindow-matlib --with-php-config=php-config${{ matrix.php }}
+          ./configure --enable-rindow_openblas --with-rindow_matlib=./rindow-matlib-${matlib} --with-php-config=php-config${{ matrix.php }}
           make clean
           make
 
@@ -53,7 +54,7 @@ jobs:
           sh ./packaging.sh ${{ matrix.php }}
           RINDOW_OPENBLAS_VERSION=`fgrep "# define PHP_RINDOW_OPENBLAS_VERSION" php_rindow_openblas.h | cut -d " " -f 4 | cut -d "\"" -f 2`
           . /etc/os-release
-          sudo apt install -y ./rindow-openblas-php${{ matrix.php }}_${RINDOW_OPENBLAS_VERSION}-1+${ID}${VERSION_ID}_amd64.deb
+          sudo apt install -y ./rindow-openblas-php${{ matrix.php }}_${RINDOW_OPENBLAS_VERSION}_amd64.deb
 
       - name: Tests
         run: |

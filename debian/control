@@ -1,8 +1,8 @@
 Package: rindow-openblas-php%PHP_VERSION%
 Maintainer: Rindow Developers <rindow@users.noreply.github.com>
 Architecture: amd64
-Depends: libopenblas-base, liblapacke
-Version: %PHP_RINDOW_OPENBLAS_VERSION%-1+%OS_VERSION%
+Depends: libopenblas-base, liblapacke, php%PHP_VERSION%-common
+Version: %PHP_RINDOW_OPENBLAS_VERSION%
 Homepage: https://rindow.github.io/
 Description: Rindow OpenBLAS PHP extension
  The Rindow OpenBLAS PHP extension is universal Buffer for N-dimension and OpenBLAS
